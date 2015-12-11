@@ -1,0 +1,406 @@
+Option Explicit
+'User variables
+Public user As String
+Public psswd As String
+Public server As String
+Public comm As String
+Public update_time As Date
+
+'------------------------ Running shell scripts on the local server --------------------------
+'The shell scripts are run through windows commands using PUTTY.
+'The windows commands are run as a separate process.
+
+'Objects used to setup and track status of a process
+Private Type SECURITY_ATTRIBUTES
+    nLength As Long
+    lpSecurityDescriptor As Long
+    bInheritHandle As Long
+End Type
+
+Private Type PROCESS_INFORMATION
+    hProcess As Long
+    hThread As Long
+    dwProcessId As Long
+    dwThreadId As Long
+End Type
+
+Private Type STARTUPINFO
+    cb As Long
+    lpReserved As Long
+    lpDesktop As Long
+    lpTitle As Long
+    dwX As Long
+    dwY As Long
+    dwXSize As Long
+    dwYSize As Long
+    dwXCountChars As Long
+    dwYCountChars As Long
+    dwFillAttribute As Long
+    dwFlags As Long
+    wShowWindow As Integer
+    cbReserved2 As Integer
+    lpReserved2 As Byte
+    hStdInput As Long
+    hStdOutput As Long
+    hStdError As Long
+End Type
+
+
+Private Const WAIT_INFINITE         As Long = (-1&)
+Private Const STARTF_USESHOWWINDOW  As Long = &H1
+Private Const STARTF_USESTDHANDLES  As Long = &H100
+Private Const SW_HIDE               As Long = 0&
+
+
+'Declare API functions used for running windows commands as a separate process
+Private Declare Function CreatePipe Lib "kernel32" (phReadPipe As Long, phWritePipe As Long, lpPipeAttributes As SECURITY_ATTRIBUTES, ByVal nSize As Long) As Long
+Private Declare Function CreateProcess Lib "kernel32" Alias "CreateProcessA" (ByVal lpApplicationName As Long, ByVal lpCommandLine As String, lpProcessAttributes As Any, lpThreadAttributes As Any, ByVal bInheritHandles As Long, ByVal dwCreationFlags As Long, lpEnvironment As Any, ByVal lpCurrentDriectory As String, lpStartupInfo As STARTUPINFO, lpProcessInformation As PROCESS_INFORMATION) As Long
+Private Declare Function ReadFile Lib "kernel32" (ByVal hFile As Long, lpBuffer As Any, ByVal nNumberOfBytesToRead As Long, lpNumberOfBytesRead As Long, lpOverlapped As Any) As Long
+Private Declare Function CloseHandle Lib "kernel32" (ByVal hObject As Long) As Long
+Private Declare Function WaitForSingleObject Lib "kernel32" (ByVal hHandle As Long, ByVal dwMilliseconds As Long) As Long
+Private Declare Function GetExitCodeProcess Lib "kernel32" (ByVal hProcess As Long, lpExitCode As Long) As Long
+Private Declare Sub GetStartupInfo Lib "kernel32" Alias "GetStartupInfoA" (lpStartupInfo As STARTUPINFO)
+Private Declare Function GetFileSize Lib "kernel32" (ByVal hFile As Long, lpFileSizeHigh As Long) As Long
+
+'Function to run commands and return results
+'Creates a process to run the command.
+'Sets up pipes to redirect standard input, output and error.
+'Waits for the process to complete.
+'Reads the output of the command and returns.
+Public Function Redirect(szBinaryPath As String, szCommandLn As String) As String
+
+Dim tSA_CreatePipe              As SECURITY_ATTRIBUTES
+Dim tSA_CreateProcessPrc        As SECURITY_ATTRIBUTES
+Dim tSA_CreateProcessThrd       As SECURITY_ATTRIBUTES
+Dim tSA_CreateProcessPrcInfo    As PROCESS_INFORMATION
+Dim tStartupInfo                As STARTUPINFO
+Dim hRead                       As Long
+Dim hWrite                      As Long
+Dim hRead1                       As Long
+Dim hWrite1                      As Long
+Dim bRead                       As Long
+Dim abytBuff()                  As Byte
+Dim lngResult                   As Long
+Dim szFullCommand               As String
+Dim lngExitCode                 As Long
+Dim lngSizeOf                   As Long
+
+tSA_CreatePipe.nLength = Len(tSA_CreatePipe)
+tSA_CreatePipe.lpSecurityDescriptor = 0&
+tSA_CreatePipe.bInheritHandle = True
+
+tSA_CreateProcessPrc.nLength = Len(tSA_CreateProcessPrc)
+tSA_CreateProcessThrd.nLength = Len(tSA_CreateProcessThrd)
+
+'create pipes to read output and error from executing the command.
+If (CreatePipe(hRead, hWrite, tSA_CreatePipe, 0&) <> 0& And CreatePipe(hRead1, hWrite1, tSA_CreatePipe, 0&) <> 0&) Then
+    tStartupInfo.cb = Len(tStartupInfo)
+    GetStartupInfo tStartupInfo
+
+    With tStartupInfo
+        .hStdOutput = hWrite
+        .hStdError = hWrite
+        .hStdInput = hRead1
+        .dwFlags = STARTF_USESHOWWINDOW Or STARTF_USESTDHANDLES
+        .wShowWindow = SW_HIDE
+    End With
+	
+	'create a process for user provided command
+    szFullCommand = szBinaryPath & " " & szCommandLn
+    lngResult = CreateProcess(0&, szFullCommand, tSA_CreateProcessPrc, tSA_CreateProcessThrd, True, 0&, ByVal 0&, vbNullString, tStartupInfo, tSA_CreateProcessPrcInfo)
+
+    'wait for the process to finish and then read output
+	If (lngResult <> 0&) Then
+        lngResult = WaitForSingleObject(tSA_CreateProcessPrcInfo.hProcess, WAIT_INFINITE)
+        lngSizeOf = GetFileSize(hRead, 0&)
+        If (lngSizeOf > 0) Then
+            ReDim abytBuff(lngSizeOf - 1)
+            If ReadFile(hRead, abytBuff(0), UBound(abytBuff) + 1, bRead, ByVal 0&) Then
+                Redirect = StrConv(abytBuff, vbUnicode)
+            End If
+        End If
+        Call GetExitCodeProcess(tSA_CreateProcessPrcInfo.hProcess, lngExitCode)
+        CloseHandle tSA_CreateProcessPrcInfo.hThread
+        CloseHandle tSA_CreateProcessPrcInfo.hProcess
+                
+        'If (lngExitCode <> 0&) Then Err.Raise vbObject + 1235&, "GetExitCodeProcess", "Non-zero Application exist code"
+        
+        CloseHandle hWrite
+        CloseHandle hRead
+    Else
+        Err.Raise vbObject + 1236&, "CreateProcess", "CreateProcess Failed, Code: " & Err.LastDllError
+    End If
+End If
+End Function
+'----------------------------------------------------------------------------------------------
+'----------------- UI callback functions ---------------------------
+
+'UI callback functions
+Public Sub TileCaller(ByVal control As IRibbonControl)
+ThisWorkbook.Tile
+End Sub
+Public Sub SetupCaller(ByVal control As IRibbonControl)
+ThisWorkbook.Setup
+End Sub
+Public Sub UpdateCaller(ByVal control As IRibbonControl)
+ThisWorkbook.UpdateStatus
+End Sub
+Public Sub TerminateCaller(ByVal control As IRibbonControl)
+ThisWorkbook.TerminateTiling
+End Sub
+'-------------------------------------------------------------------
+'------------------- Functions that initiate appropriate backend service scripts on the local server based on user input-------------------
+
+'Start tiling the selected experiments.
+Sub Tile()
+
+  Dim resp As String
+  Dim res As Integer
+  
+  'cahek and setup user acess to local server
+  If user = "" Or psswd = "" Or server = "" Then
+    ThisWorkbook.Setup
+  End If
+    
+  If (user <> "") And (psswd <> "") And (server <> "") Then
+    
+    Dim exp As String, pltwell As String, num As String
+    Dim dims As String, xdim As String, ydim As String, zdim As String
+    Dim temp As String
+    Dim tim As String
+    Dim rowcol As String
+    
+    Dim count As Integer
+    Dim TCount As Integer
+    
+    count = 0
+    TCount = 0
+    
+    Dim a As Range, b As Range
+    Set a = Selection
+
+    Application.DisplayStatusBar = True
+    Application.StatusBar = "Start Tiling..."
+
+	'extract experiment metadata for each row selected
+    For Each b In a.Rows		
+        exp = Left(ActiveCell.Offset(b.Row - ActiveCell.Row, 2 - ActiveCell.Column).Value, 6)
+        pltwell = Right(ActiveCell.Offset(b.Row - ActiveCell.Row, 2 - ActiveCell.Column).Value, 6)
+        dims = ActiveCell.Offset(b.Row - ActiveCell.Row, 7 - ActiveCell.Column).Value
+        xdim = Mid(dims, InStr(dims, "x") + 1, InStr(dims, "y") - InStr(dims, "x") - 1)
+        ydim = Mid(dims, InStr(dims, "y") + 1, InStr(dims, "z") - InStr(dims, "y") - 1)
+        zdim = Mid(dims, InStr(dims, "z") + 1, Len(dims) - InStr(dims, "z"))
+        temp = Split(ActiveCell.Offset(b.Row - ActiveCell.Row, 3 - ActiveCell.Column).Value, ".")(0)
+        num = Right(temp, Len(temp) - InStr(temp, "_L") - 1)
+        tim = Mid(temp, 15, InStr(temp, "_R1") - 15)
+        temp = ActiveCell.Offset(b.Row - ActiveCell.Row, 8 - ActiveCell.Column).Value
+        
+        If UBound(Split(temp, ":")) > 0 Then
+            rowcol = Split(temp, ":")(1)
+        Else
+            rowcol = ""
+        End If
+        
+		'check and prompt user if already tiled
+        res = vbYes
+        If Left(ActiveCell.Offset(b.Row - ActiveCell.Row, 11 - ActiveCell.Column).Value, 4) = "Tile" Then
+            res = MsgBox("Already Tiled: " & exp & pltwell & ". Do you want to Re-Tile?", vbYesNo)
+        ElseIf Left(ActiveCell.Offset(b.Row - ActiveCell.Row, 11 - ActiveCell.Column).Value, 4) = "Tili" Then
+            res = MsgBox("Tiling in process: " & exp & pltwell & ". Do you want to restart?", vbYesNo)
+            If res = vbYes Then
+                resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " qdel " & Split(ActiveCell.Offset(b.Row - ActiveCell.Row, 11 - ActiveCell.Column).Value, ":")(2), "")
+                resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " /home/" & user & "/scripts/clean_" & exp & pltwell & tim & ".sh", "")
+            End If
+        End If
+        
+		'start the tiling process for the selected row
+        If res = vbYes Then
+            Application.StatusBar = "Start Tiling: " & exp & pltwell
+            resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " /home/" & user & "/scripts/del_uploaded.sh " & exp & " " & pltwell & " " & tim, "")
+            resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " /home/" & user & "/scripts/del.sh " & exp & " " & pltwell & " " & tim, "")
+
+            resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " /home/" & user & "/scripts/run_tiling.sh " & exp & " " & pltwell & " " & num & " " & xdim & " " & ydim & " " & zdim & " " & tim & " " & rowcol, "")
+                        
+            Cells(b.Row, 11) = "Tiling:" & user & ":" & Split(resp, ".")(0)
+            count = count + 1
+            TCount = TCount + 1
+            
+            Application.StatusBar = "Started Tiling: " & exp & pltwell
+            
+        End If        
+    Next
+    Application.StatusBar = "Tiling Started: " & count
+    ThisWorkbook.UpdateStatus
+    
+  End If
+End Sub
+
+'setup server and user
+Sub Setup()
+
+  Dim response As Integer
+  
+    Dim f As Office.FileDialog
+    Set f = Application.FileDialog(1)
+    f.Title = "Select PuTTY Link (command-line SSH client)"
+    
+    If f.Show Then
+      comm = f.SelectedItems(1)
+    Else
+      comm = "plink"
+    End If
+    
+    response = MsgBox("Do you want use Default account", vbYesNo)
+    If response = vbYes Then
+      ThisWorkbook.SetDefault
+    Else
+      UserForm1.Show
+    End If
+  
+End Sub
+
+'Set Default server name, user name and password
+Sub SetDefault()
+    server = "xyz"
+    user = "user"
+    psswd = "password"
+End Sub
+
+'Terminate selecting tiling processes
+Sub TerminateTiling()
+    Dim jobid As String
+    Dim exp As String
+    Dim pltwell As String
+    Dim resp As String
+    Dim count As Integer
+    Dim temp As String
+    Dim tim As String
+    count = 0
+    
+    If user = "" Or psswd = "" Or server = "" Then
+        ThisWorkbook.Setup
+    End If
+    
+    Dim a As Range, b As Range
+    Set a = Selection
+
+    For Each b In a.Rows
+		'terminate selcted tiling process if it was started by the same user
+        temp = ActiveCell.Offset(b.Row - ActiveCell.Row, 11 - ActiveCell.Column).Value
+        If (temp <> "") Then
+            If (Split(temp, ":")(0) = "Tiling") And (Split(temp, ":")(1) = user) Then
+                exp = Left(ActiveCell.Offset(b.Row - ActiveCell.Row, 2 - ActiveCell.Column).Value, 6)
+                pltwell = Right(ActiveCell.Offset(b.Row - ActiveCell.Row, 2 - ActiveCell.Column).Value, 6)
+                temp = Split(ActiveCell.Offset(b.Row - ActiveCell.Row, 3 - ActiveCell.Column).Value, ".")(0)
+                tim = Mid(temp, 15, InStr(temp, "_R1") - 15)
+                temp = ActiveCell.Offset(b.Row - ActiveCell.Row, 11 - ActiveCell.Column).Value
+                resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " qdel " & Split(temp, ":")(2), "")
+                resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " /home/" & user & "/scripts/clean_" & exp & pltwell & tim & ".sh", "")
+                Cells(b.Row, 11) = ""
+                count = count + 1
+                'MsgBox (comm & " -batch -pw " & psswd & " " & user & "@" & server & " qdel " & Split(temp, ":")(2))
+                'MsgBox (comm & " -batch -pw " & psswd & " " & user & "@" & server & " /home/" & user & "/scripts/clean_" & exp & pltwell & ".sh")
+            End If
+        End If
+    Next    
+    MsgBox ("Tiling Terminated: " & count)
+End Sub
+
+'Update Status of Tiling (Tling:user:jobid or Tiled:user)
+Sub UpdateStatus()
+    Dim c As Object
+    Dim exp As String
+    Dim pl As String
+    Dim pltwell As String
+    Dim resp As String
+    Dim firstAddress As String
+    Dim count As Integer
+    Dim i As Long
+    Dim aFirstArray() As Variant
+    Dim ls As Variant
+    Dim arr As New Collection, a
+    Dim usr As String
+    Dim plwl As String
+    Dim siz As String
+    Dim tim As String
+    Dim timc As String
+    Dim temp As String
+    
+    aFirstArray = Range("B2:B" & Cells(Rows.count, "A").End(xlUp).Row).Value
+    
+    On Error Resume Next
+    For Each a In aFirstArray
+     a = Left(a, 9)
+     arr.Add a, a
+    Next
+
+    count = 0
+    
+    If user = "" Or psswd = "" Or server = "" Then
+        ThisWorkbook.Setup
+    End If
+    
+    Application.DisplayStatusBar = True
+    Application.StatusBar = "Updating Status..."
+    
+    For i = 1 To arr.count
+     exp = Left(arr(i), 6)
+     pl = Right(arr(i), 3)
+     Application.StatusBar = "Updating Exp: " & exp & " Plate: " & Right(pl, 2)
+     
+     resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " /home/" & user & "/scripts/check_tiled.sh " & exp & " " & pl, "")
+     ls = Split(resp, vbLf)
+     For Each a In ls
+		'for each experiment update the staus of all tiled and uploaded images
+        If a <> "" Then
+            usr = Split(a, " ")(0)
+            plwl = Right(Left(Split(a, " ")(2), 15), 6)
+            siz = Split(a, " ")(1)
+            temp = Split(Split(a, " ")(2), ".")(0)
+            tim = Mid(temp, 16, Len(temp) - 4 - 16)
+            With Sheet3.Columns(2)
+            Set c = .Find(exp & plwl, lookat:=xlPart)
+            If Not c Is Nothing Then
+                firstAddress = c.Address
+                Do
+                    'If Cells(c.Row, 11).Value = "" Or Left(Cells(c.Row, 11).Value, 6) = "Tiling" Then
+                    temp = Split(Cells(c.Row, 3).Value, ".")(0)
+                    timc = Mid(temp, 15, InStr(temp, "_R1") - 15)
+                        If Left(Cells(c.Row, 11).Value, 6) = "Tiling" And tim = timc Then
+                            resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " /home/" & user & "/scripts/check_uploaded.sh " & exp & " " & plwl & " " & tim, "")
+                            resp = Split(resp, vbLf)(0)
+                            If resp = siz And user = usr Then
+                                resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " qstat | grep " & user, "")
+                                If resp <> "" Then
+                                    resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " qdel " & Split(Cells(c.Row, 11).Value, ":")(2), "")
+                                    resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " /home/" & user & "/scripts/clean_" & exp & plwl & tim & ".sh", "")
+                                End If
+                                Cells(c.Row, 11) = "Tiled:" & usr
+                                count = count + 1
+                            ElseIf resp = siz Then
+                                Cells(c.Row, 11) = "Tiled:" & usr
+                                count = count + 1
+                            End If
+                        End If
+                    'End If
+                    Set c = .FindNext(c)
+                Loop While Not c Is Nothing And c.Address <> firstAddress
+            End If
+        End With
+        End If
+     Next
+    Next
+    Application.StatusBar = "Last Updated: " & Now
+    
+    With Sheet3.Columns(11)
+        Set c = .Find("Tiling", lookat:=xlPart)
+        If Not c Is Nothing Then
+            Application.OnTime update_time, "ThisWorkbook.UpdateStatus", , False
+            update_time = Now + TimeValue("00:20:00")
+            Application.OnTime update_time, "ThisWorkbook.UpdateStatus"
+        Else
+            Application.OnTime update_time, "ThisWorkbook.UpdateStatus", , False
+        End If
+    End With
+End Sub
+'---------------------------------------------------------------------------------------------------------

@@ -1,0 +1,14 @@
+<customUI xmlns="http://schemas.microsoft.com/office/2006/01/customui"> 
+  <ribbon> 
+    <tabs> 
+      <tab id="CustomTab" label="TILING"> 
+        <group id="SampleGroup" label="Tiling"> 
+          <button id="ButtonSetup" label="Setup" size="large" onAction="ThisWorkbook.SetupCaller" imageMso="ServerConnection" />
+		  <button id="ButtonTile" label="Tile" size="large" onAction="ThisWorkbook.TileCaller" imageMso="AppointmentColorDialog" />
+		  <button id="ButtonTerminate" label="Terminate Tiling" size="large" onAction="ThisWorkbook.TerminateCaller" imageMso="PrintPreviewClose"/> 
+		  <button id="ButtonUpdate" label="Update Status" size="large" onAction="ThisWorkbook.UpdateCaller" imageMso="RecurrenceEdit" />  		  
+        </group > 
+      </tab> 
+    </tabs> 
+  </ribbon> 
+</customUI>
