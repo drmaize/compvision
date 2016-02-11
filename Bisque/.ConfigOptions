@@ -1,0 +1,12 @@
+
+########################################
+# Configuration file to adjust options #
+########################################
+
+[credentials]
+username = drmaize
+password = N$F@11pgrp
+
+[urls]
+bisque_root = http://bisque.iplantcollaborative.org/
+
