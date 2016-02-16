@@ -48,15 +48,26 @@ class UploadHandler(object):
 		self.password = config.get('credentials', 'password')
 		self.bisque_root = config.get('urls', 'bisque_root')
 
-	def _authenticate(self):
-		s = BQSession().init_cas(self.username, self.password, bisque_root=self.bisque_root)
-
-		if s._check_session():
-			self._debug_print('Authenticated successfully!')
-			return s
-		else:
-			self._debug_print('Unable to authenticate session', log="error")
-			return None
+	def _authenticate(self, attempts=25):
+		'''
+		Attempts to authenticate N times
+		
+		@attempts(optional): number of attempts to authenticate
+		'''
+		counter = 0
+		for i in range(attempts):
+			s = BQSession().init_cas(self.username, self.password, bisque_root=self.bisque_root)
+			try:
+				if s._check_session():
+					self._debug_print('Authenticated successfully!')
+					return s
+			except:
+				self._debug_print('Unable to authenticate... trying again')
+				pass
+			time.sleep(30)
+			
+		self._debug_print('Unable to authenticate.', 'error')
+		return None
 
 	def _xml_builder(resource_name, metadata, resource_type="image"):
 		xmlstr = "<resource type=\"" + resource_type + "\">\n"
@@ -81,13 +92,20 @@ class UploadHandler(object):
 		'''
 		local_session = self._authenticate()
 		if local_session is None:
-			return None
-
-		if metadata:
-			xmlstr = self._xml_builder(metadata)
-			outxml = local_session.postblob(filename=filename, xml=xmlstr)
+			time.sleep(600)
+			local_session = self.authenticate()
 		else:
-			outxml = local_session.postblob(filename=filename)	
+			return None
+			
+		try:
+			if metadata:
+				xmlstr = self._xml_builder(metadata)
+				outxml = local_session.postblob(filename=filename, xml=xmlstr)
+			else:
+				outxml = local_session.postblob(filename=filename)	
+		except AttributeError:
+			self._debug_print('Failed to post file ' + filename, 'error')
+			return None
 			
 		self._debug_print(filename + ' posted')	
 
@@ -106,7 +124,7 @@ class UploadHandler(object):
 		'''
 		return self.upload_image(*args)
 			
-	def upload_dataset(self, dataset_name, image_data, num_threads=cpu_count()):
+	def upload_dataset(self, dataset_name, image_data, num_threads=4):
 		'''
 		Uploads multiple images and groups them into a dataset via threading
 		
@@ -124,13 +142,13 @@ class UploadHandler(object):
 		#ds_list = [r.get() for r in async_results]
 		
 		while not result.ready():
-			self._debug_print("Remaining uploads: {}".format(result._number_left))
-			time.sleep(10)
+			self._debug_print("Chunks Remaining: >={}".format(result._number_left))
+			time.sleep(30)
 		
 		# Build dataset
 		ds_list = result.get()
 		pool.close()
-		#
+		
 		self._debug_print('Dataset ' + dataset_name + ' contans '+ str(len(ds_list)) + ' element(s)')
 		dataset = BQDataset (name=dataset_name)
 		dataset.value = [ (uri, 'object') for image_name, uri in ds_list ]
@@ -182,14 +200,15 @@ if __name__ == "__main__":
 	(options, args) = parser.parse_args()
 
 	uh = UploadHandler(debug=True)
-
+	'''
 	dataset_name = "test"
 	test_image = '../test/test.jpg'
 	test_image2 = '../test/test2.ome.tif'
 	metadata = {"item1" : "description1", "item2":"description2"}
 	image_data = [ (test_image, metadata) , (test_image2, metadata) ]
-
 	'''
+	
+	dataset_name = "exp019SLB"
 	path = "/mnt/data27/wisser/drmaize/image_data/e019SLB/microimages/reconstructed/HS/"
 	files = (file for file in os.listdir(path) 
          if os.path.isfile(os.path.join(path, file)))
@@ -198,8 +217,10 @@ if __name__ == "__main__":
 	for file in files:
 		image_data.append( (os.path.join(path, file), None) )
 
+	
+	
 	print image_data
-	'''
+	
 	# print "uh.upload(dataset_name, image_data)"
 	# uh.upload_image(test_image, metadata)
 	
