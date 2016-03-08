@@ -14,7 +14,7 @@ def main():
 		image_data = []
 		for file in files:
 			# lookup file metadata
-			metadata = None
+			metadata = {'experiment', dataset_name}
 			image_data.append( (os.path.join(path, file), metadata) )
 			
 		uh = UploadHandler()
