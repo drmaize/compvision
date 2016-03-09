@@ -31,18 +31,18 @@ import xml.etree.ElementTree as ElementTree
 #######################
 # Path to config file #
 #######################
-config_file = "../.ConfigOptions"
+cf = "../.ConfigOptions"
 
 class UploadHandler(object):
 
-	def __init__(self, debug=False):
+	def __init__(self, config_file=cf, debug=False):
 		config = ConfigParser.ConfigParser()
 		config.read(config_file)
 		
 		# Setup logging and debugging for this module
 		self.logger = logging.getLogger(__name__)
 		self.debug = debug
-
+		
 		# Credentials and session info
 		self.username = config.get('credentials', 'username')
 		self.password = config.get('credentials', 'password')
@@ -52,7 +52,8 @@ class UploadHandler(object):
 		'''
 		Attempts to authenticate N times
 		
-		@attempts(optional): number of attempts to authenticate
+		@
+		attempts(optional): number of attempts to authenticate
 		'''
 		counter = 0
 		for i in range(attempts):
@@ -91,12 +92,13 @@ class UploadHandler(object):
 		@metadata(optional): associated metadata dictionary (k,v pairs)
 		'''
 		local_session = self._authenticate()
+		'''
 		if local_session is None:
 			time.sleep(600)
-			local_session = self.authenticate()
+			local_session = self._authenticate()
 		else:
 			return None
-			
+		'''	
 		try:
 			if metadata:
 				xmlstr = self._xml_builder(metadata)
@@ -191,14 +193,6 @@ class UploadHandler(object):
 
 if __name__ == "__main__":
 	
-	from optparse import OptionParser
-
-	parser = OptionParser()
-	
-	parser.add_option("-d", "--directory", dest="dir_name", help="directory to upload to BISQUE")
-	parser.add_option("-v", "--verbose", action="store_true", dest="verbose", default=False, help="turns on verbose debugging")
-	(options, args) = parser.parse_args()
-
 	uh = UploadHandler(debug=True)
 	'''
 	dataset_name = "test"
@@ -207,7 +201,7 @@ if __name__ == "__main__":
 	metadata = {"item1" : "description1", "item2":"description2"}
 	image_data = [ (test_image, metadata) , (test_image2, metadata) ]
 	'''
-	
+	'''	
 	dataset_name = "exp019SLB"
 	path = "/mnt/data27/wisser/drmaize/image_data/e019SLB/microimages/reconstructed/HS/"
 	files = (file for file in os.listdir(path) 
@@ -225,6 +219,7 @@ if __name__ == "__main__":
 	# uh.upload_image(test_image, metadata)
 	
 	uh.upload_dataset(dataset_name, image_data)
-
+	'''
+	uh.upload_image("/home/wtreible/upload/e013SLBp01wA1x20_1506111930rc001.ome.tif", {"experimentID":"e013SLB"})
 
 
