@@ -7,7 +7,7 @@ config_file = "../.ConfigOptions"
 
 class DBHandler(object):
 
-	def __init__(self, debug=False):		
+	def __init__(self, database=None, debug=False):
 		config = ConfigParser.ConfigParser()
 		config.read(config_file)
 
@@ -19,7 +19,10 @@ class DBHandler(object):
 		self.username = config.get('mysql', 'username')
 		self.password = config.get('mysql', 'password')
 		self.host = config.get('mysql', 'host')
-		self.db = config.get('mysql', 'database')
+		if database is None:
+			self.db = config.get('mysql', 'database')
+		else:
+			self.db = database
 		
 		
 	def _connect(self):
@@ -29,23 +32,18 @@ class DBHandler(object):
 					db=self.db)
 		return self.conn.cursor()
 		
-	def insert_into(self, table, values, id=False):
+	def insert_into(self, table, values):
 		values = ','.join([ "{}".format(value) if isinstance( value,  numbers.Number ) else "'{}'".format(value) for value in values])
-		if id:
-			values = "{},".format(id) + values
-		else:
-			values = "NULL," + values
-			
 		query = "INSERT into " + table + " VALUES (" + values + ");"
-		print query
-		'''
 		cursor = self._connect()
 		try:
-			x.execute()
-			conn.commit()
-		except:
-			conn.rollback()
-		'''
+			cursor.execute(query)
+			self.conn.commit()
+		except Exception,e:
+			print "Failed: " + query
+			print str(e)
+			self.conn.rollback()
+
 	
 	def get_tables(self):
 		cursor = self._connect()
@@ -64,9 +62,6 @@ if __name__ == "__main__":
 	dbh = DBHandler()
 	values = [1.0, "Test", "Col2"]
 	table = "test_table"
-	
-	dbh.insert_into(table,values)
-	dbh.insert_into(table,values, id=99)
 	
 	for table in dbh.get_tables():
 		print "Table " + table + ":"

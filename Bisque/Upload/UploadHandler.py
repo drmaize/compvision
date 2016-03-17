@@ -52,10 +52,8 @@ class UploadHandler(object):
 		'''
 		Attempts to authenticate N times
 		
-		@
-		attempts(optional): number of attempts to authenticate
+		@attempts(optional): number of attempts to authenticate
 		'''
-		counter = 0
 		for i in range(attempts):
 			s = BQSession().init_cas(self.username, self.password, bisque_root=self.bisque_root)
 			try:

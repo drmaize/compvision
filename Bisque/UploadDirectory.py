@@ -1,4 +1,4 @@
-import sys,os
+import sys,os,requests
 from Upload.UploadHandler import UploadHandler
 
 def main():
@@ -21,6 +21,7 @@ def main():
 
 		print uri_list
 if __name__ == "__main__":
+	requests.packages.urllib3.disable_warnings()
 	main()
 	
 
