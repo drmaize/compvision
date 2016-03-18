@@ -61,5 +61,12 @@ Usage:
 	- Deletes tiled images of a given experiment that are uploaded onto iRODS.
 
 
+----------------------------------------------------------------------------------------------------------------------
+Update: 03/18/2016
+
+- run_tiling-sh has been updated to reflect the changes in the directory structure used for storing images.
+- check_tiled.sh has been updated to reflect changes in the directory structure used for storing images.
+- all scripts related top upload are not being currently used as we are changing the upload strategy.
+----------------------------------------------------------------------------------------------------------------------
 
 
