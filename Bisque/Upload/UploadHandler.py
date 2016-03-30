@@ -74,7 +74,7 @@ class UploadHandler(object):
 			xmlstr += "\t<tag name=\"" + key + "\" value=\"" + value + "\" />\n"
 		return xmlstr + "</resource>"
 
-	def _debug_print(self, s, log_type="info"):
+	def _debug_print(self, s, log="info"):
 		if self.debug:
 			print s
 		if log=="info":
@@ -175,7 +175,8 @@ class UploadHandler(object):
 		ds_list = []
 		for filename, metadata in image_data:
 			image = self.upload_image(filename=filename, metadata=metadata)
-			if image is not None:
+
+		if image is not None:
 				ds_list.append((image.name, image.uri))
 		self._debug_print('Dataset ' + dataset_name + ' contans '+ str(len(ds_list)) + ' element(s)')
 		
@@ -218,6 +219,6 @@ if __name__ == "__main__":
 	
 	uh.upload_dataset(dataset_name, image_data)
 	'''
-	uh.upload_image("/home/wtreible/upload/e013SLBp01wA1x20_1506111930rc001.ome.tif", {"experimentID":"e013SLB"})
+	print uh.upload_image("TEST.jpeg", {"tag1":"val1"})
 
 

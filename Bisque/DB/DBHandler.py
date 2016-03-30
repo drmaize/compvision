@@ -3,11 +3,11 @@ import MySQLdb
 import os, logging, uuid, ConfigParser
 import numbers
 
-config_file = "../.ConfigOptions"
+cf = "../.ConfigOptions"
 
 class DBHandler(object):
 
-	def __init__(self, database=None, debug=False):
+	def __init__(self, config_file=cf, database=None, debug=False):
 		config = ConfigParser.ConfigParser()
 		config.read(config_file)
 
@@ -43,7 +43,32 @@ class DBHandler(object):
 			print "Failed: " + query
 			print str(e)
 			self.conn.rollback()
-
+			
+	def search_col(self, table, col, search, mode=1):
+		'''
+		@mode: '1' = anywhere in string ('%<search_term>%')
+			   '2' = prefix ('<search_term>%')
+			   '3' = suffix ('%<search_term>')
+		'''
+		if mode == 1:
+			search = "%" + search + "%"
+		elif mode == 2:
+			search = search + "%"
+		elif mode == 3:
+			search = "%" + search
+			
+		query = "SELECT * FROM " + table + " WHERE " + col + " LIKE \'" + search + "\';"
+		cursor = self._connect()
+		try:
+			cursor.execute(query)
+			self.conn.commit()
+		except Exception,e:
+			print "Failed: " + query
+			print str(e)
+			self.conn.rollback()
+			
+		return [row for row in cursor.fetchall()]
+		#select * from inventory where sample like '013SLB%';
 	
 	def get_tables(self):
 		cursor = self._connect()
@@ -60,10 +85,11 @@ class DBHandler(object):
 		
 if __name__ == "__main__":
 	dbh = DBHandler()
-	values = [1.0, "Test", "Col2"]
-	table = "test_table"
 	
 	for table in dbh.get_tables():
 		print "Table " + table + ":"
 		for col_name in dbh.get_columns(table):
 			print "\t" + col_name
+	
+	srch = dbh.search_col("inventory", "sample", "013SLB")
+	print srch[0]
