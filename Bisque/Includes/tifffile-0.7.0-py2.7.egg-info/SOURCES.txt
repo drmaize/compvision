@@ -1,0 +1,15 @@
+HISTORY.rst
+LICENSE
+MANIFEST.in
+README.rst
+setup.cfg
+setup.py
+test_tifffile.py
+tifffile/__init__.py
+tifffile/_tifffile.c
+tifffile/tifffile.py
+tifffile.egg-info/PKG-INFO
+tifffile.egg-info/SOURCES.txt
+tifffile.egg-info/dependency_links.txt
+tifffile.egg-info/not-zip-safe
+tifffile.egg-info/top_level.txt

@@ -85,4 +85,19 @@ else:
 			for col_index in xrange(0, sheet.ncols):
 				row_list.append(str(sheet.cell(row_index, col_index).value).encode('ascii'))
 			dbh.insert_into(table,row_list)
+	'''
+	Table microImageSets:
+		reconstructedImage
+		imageChannel
+		bisqueURI
+	'''
+	table = 'microImageSets'
+	sheet = book.sheet_by_index(3)
+	for row_index in xrange(1, sheet.nrows):
+		row_list = []
+		# If reconstructedImage isn't empty
+		if str(sheet.cell(row_index, 0).value).encode('ascii') != '':
+			for col_index in xrange(0, sheet.ncols):
+				row_list.append(str(sheet.cell(row_index, col_index).value).encode('ascii'))
+			dbh.insert_into(table,row_list)
 	
