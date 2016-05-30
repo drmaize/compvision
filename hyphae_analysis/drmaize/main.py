@@ -11,6 +11,10 @@ import joblib
 import scipy
 import scipy.stats
 from skimage import morphology
+import javabridge
+import bioformats
+import scipy.misc
+
 
 # import scipy.spatial as spspat
 # import skimage.morphology as skmorph
@@ -251,7 +255,7 @@ def skeleton(pth, npz_name, immsk):
     data['pruned'] = skel & ~pruned
     data['skel'] = pruned
 
-    npz_cache = utils.file_cache(os.path.join(pth, 'results/segmentationfungus', npz_name), '/tmp/drmaize/')
+    npz_cache = drmaize.utils.file_cache(os.path.join(pth, 'results/segmentationfungus', npz_name), '/tmp/drmaize/')
     with np.load(npz_cache, 'r') as old_data:
         old_data = dict(old_data)
         old_data.update(data)
@@ -313,19 +317,6 @@ def pipeline():
 #                     if m.group(6) == '1508062130':
 #                         fnames.append(os.path.join(data_dir, exp, sub_dir, f))
 #                         print f
-#         if False:
-#             pass
-#         elif m and m.group(6) in ['1501221600', '1501241213']:
-#             fnames.append(os.path.join(data_dir, exp, sub_dir, f))
-#             print f
-#         elif m and m.group(3) == '02' and m.group(6) == '':
-#             fnames.append(os.path.join(data_dir, exp, sub_dir, f))
-#             print f
-#         elif m and m.group(3) == '03' and m.group(6) == '':
-#             fnames.append(os.path.join(data_dir, exp, sub_dir, f))
-#             print f
-#         if f == 'exp013SLBp03wC31505041720rf001.ome.tif':
-#             fnames.append(os.path.join(data_dir, exp, sub_dir, f))
     
     seed = time.time()
     print 'seed', seed
@@ -333,126 +324,48 @@ def pipeline():
     metrics = []
 
     for fname in sorted(fnames)[::-1]:
-#         fname = '/home/rhein/mnt/drmaize/image_data/013SLB/microimages/reconstructed/exp013SLBp02wB31506121700rf002.ome.tif'
-
-#         fname = '/home/rhein/mnt/drmaize/image_data/013SLB/microimages/reconstructed/exp013SLBp03wB11505041720rf002.ome.tif'
-        print 'filename', fname
-        
-#         head, tail = os.path.split(fname)
-#         tail = tail.replace('rf002.ome.tif', '_topsurface.txt')
-#         surf = os.path.join(head, 'LeafSurfaceImage', tail)
-#         surf = np.loadtxt(surf, np.float32, delimiter=',')
-#          
-#         plt.figure('surf')
-#         plt.hist(surf.flat, bins=100)
-# #         plt.imshow(surf, 'gray', interpolation='nearest')
-#          
-
-#         cache_fname = utils.file_cache(fname, '/tmp/drmaize')
-#         fung = utils.get_tif(cache_fname)
-#         print 'fung', cache_fname
-#         
-#         cache_fname = utils.file_cache(fname.replace('rf', 'rl'), '/tmp/drmaize')
-#         host = utils.get_tif(cache_fname)
-#         print 'host', cache_fname
-#         
-#         plt.figure()
-#         plt.imshow(host.max(1), 'gray', interpolation='nearest')
-# 
-#         plt.figure()
-#         plt.imshow(fung.max(1), 'gray', interpolation='nearest')
-#         
-#         head, tail = os.path.split(fname)
-#         tail = tail.replace('rf002.ome.tif', '_topsurface.txt')
-#         surf = os.path.join(head, 'LeafSurfaceImage', tail)
-#         surf = np.loadtxt(surf, np.float32, delimiter=',')
-# 
-#         ys, xs = np.indices(surf.shape)
-#         zs = surf
-#         
-#         zs, ys, xs = (ndimage.zoom(v, 2. ** -5, order=1) for v in (zs, ys, xs))
-#         
-#         plt.figure()
-#         ax = plt.subplot(111, projection='3d')
-#         ax.scatter(xs * 2.6240291219148313, ys * 2.6240291219148313, zs * 1.2)
-        
-#         def randrange(n, vmin, vmax):
-#             return (vmax - vmin) * np.random.rand(n) + vmin
-#         
-#         fig = plt.figure()
-#         ax = fig.add_subplot(111, projection='3d')
-#         n = 100
-#         for c, m, zl, zh in [('r', 'o', -50, -25), ('b', '^', -30, -5)]:
-#             xs = randrange(n, 23, 32)
-#             ys = randrange(n, 0, 100)
-#             zs = randrange(n, zl, zh)
-#             ax.scatter(xs, ys, zs, c=c, marker=m)
-#         
-#         ax.set_xlabel('X Label')
-#         ax.set_ylabel('Y Label')
-#         ax.set_zlabel('Z Label')
-                          
-#          
-#         plt.figure('fung')
-#         plt.hist(fung.flat, bins=100)
-# #         plt.imshow(fung, 'gray', interpolation='nearest')
-#  
+        print 'filename', fname        
     
         pth, fname = os.path.split(fname)
         if os.path.isfile(os.path.join(pth, 'MIP', fname)):
-            cache_fname = utils.file_cache(os.path.join(pth, 'MIP', fname), '/tmp/drmaize')
+            cache_fname = drmaize.utils.file_cache(os.path.join(pth, 'MIP', fname), '/tmp/drmaize')
             im = ndimage.imread(cache_fname)
         else:
-            cache_fname = utils.file_cache(os.path.join(pth, fname), '/tmp/drmaize')
-            im = utils.get_tif(cache_fname)
+            cache_fname = drmaize.utils.file_cache(os.path.join(pth, fname), '/tmp/drmaize')
+            im = drmaize.utils.get_tif(cache_fname)
             im = np.max(im, 0)
-            spmisc.imsave(os.path.join(pth, 'MIP', fname), im)
+            scipy.misc.imsave(os.path.join(pth, 'MIP', fname), im)
         print 'cache filename', cache_fname        
 
-        im = im.astype(float)
-#         im = utils.imscale(im, (.5,) * 2)
-
-        cache_fname = utils.file_cache(os.path.join(pth, fname), '/tmp/drmaize/')
-        res = utils.get_tif_res(cache_fname)
+        cache_fname = drmaize.utils.file_cache(os.path.join(pth, fname), '/tmp/drmaize/')
+        res = drmaize.utils.get_tif_res(cache_fname)
         print 'physical resolution', res
         res = res[1:]
         res = res / np.min(res)
 
         npz_name = '{}.npz'.format(os.path.splitext(os.path.splitext(fname)[0])[0])
+        print npz_name
+
+        im = im.astype(float)
+#         im = utils.imscale(im, (.5,) * 2)
 
         # mask generation
         # TODO insert mask into cache file
-        immsk = im > 4
-#         immsk = im > skfil.threshold_otsu(im[im > 1e-6])
-        r = 2 ** 5
+#         immsk = im > 4
+#         r = 2 ** 5
 #         selem = np.indices((2 * r + 1,) * 2, float)
 #         selem -= r
 #         selem **= 2
 #         selem = selem.sum(0)
 #         np.sqrt(selem, selem)
 #         selem = selem <= r
-#         immsk = utils.fft_binary_closing(immsk, selem)
-#         r = np.max(im.shape) / 40
-        selem = np.indices((2 * r + 1,) * 2, float)
-        selem -= r
-        selem **= 2
-        selem = selem.sum(0)
-        np.sqrt(selem, selem)
-        selem = selem <= r
-        immsk = utils.fft_binary_erosion(immsk, selem)
-        immsk[:r, :] = immsk[:, :r] = immsk[-r:, :] = immsk[:, -r:] = 0
-                
-        slc = np.s_[:im.shape[0] / 16, :im.shape[1] / 16]
-        
-#         plt.figure('im')
-#         plt.imshow(im[slc] ** .5, 'gray')
-#         plt.figure('immsk')
-#         plt.imshow(immsk[slc], 'gray')
-
+#         immsk = drmaize.utils.fft_binary_erosion(immsk, selem)
+#         immsk[:r, :] = immsk[:, :r] = immsk[-r:, :] = immsk[:, -r:] = 0
+#                 
 #         scanal(pth, npz_name, im, immsk, sizes, nstds, orthstep, res)
 #         segment(pth, fname, npz_name, exp_re, immsk)
 #         skeleton(pth, npz_name, immsk)
-#         continue
+        continue
         
         npz_cache = utils.file_cache(os.path.join(pth, 'results/segmentationfungus', npz_name), '/tmp/drmaize/')
         with np.load(npz_cache, 'r') as data:
@@ -754,6 +667,7 @@ if __name__ == '__main__':
 
     javabridge.start_vm(args=[], class_path=bioformats.JARS)
     try:
+        bioformats.init_logger()
         main()
     finally:
         javabridge.kill_vm()

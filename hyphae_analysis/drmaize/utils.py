@@ -201,7 +201,7 @@ def fft_binary_erosion(image, selem):
 
 def get_tif_res(tif_file):
     root = bioformats.get_omexml_metadata(tif_file)
-    root = str(root)
+    root = root.encode('ascii', 'replace')
     root = etree.fromstring(root)
     ns = root.nsmap[None]
     root = root.find('{{{ns}}}Image/{{{ns}}}Description'.format(ns=ns))
