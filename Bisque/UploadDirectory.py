@@ -20,6 +20,7 @@ def main():
 			uri_list.append(retval)
 
 		print uri_list
+
 if __name__ == "__main__":
 	requests.packages.urllib3.disable_warnings()
 	main()

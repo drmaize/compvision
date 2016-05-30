@@ -1,0 +1,40 @@
+Metadata-Version: 2.0
+Name: bisque-api
+Version: 0.6a8
+Summary: Bisque Module API
+Home-page: http://biodev.ece.ucsb.edu/project/bisque
+Author: Center for BioImage Informatics
+Author-email: bisque-bioimage@googlegroups.com
+License: UNKNOWN
+Keywords: database image processing scientific
+Platform: UNKNOWN
+Classifier: Programming Language :: Python
+Classifier: Topic :: Internet :: WWW/HTTP
+Classifier: Intended Audience :: Science/Research
+Classifier: Topic :: Scientific/Engineering :: Image Recognition
+Classifier: License :: OSI Approved :: BSD License
+Requires-Dist: six
+Requires-Dist: requests (>=2.4.1)
+Provides-Extra: CAS
+Requires-Dist: BeautifulSoup4; extra == 'CAS'
+Provides-Extra: bqfeature
+Requires-Dist: tables; extra == 'bqfeature'
+Provides-Extra: lxml
+Requires-Dist: lxml; extra == 'lxml'
+
+BisQue Python API
+-----------------
+
+Python API to interact with BisQue servers
+
+
+See http://bioimage.ucsb.edu/bisque
+
+
+
+0.6
+---
+
+    Initial Version
+
+

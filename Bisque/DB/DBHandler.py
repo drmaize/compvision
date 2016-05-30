@@ -91,5 +91,5 @@ if __name__ == "__main__":
 		for col_name in dbh.get_columns(table):
 			print "\t" + col_name
 	
-	srch = dbh.search_col("inventory", "sample", "013SLB")
-	print srch[0]
+	#srch = dbh.search_col("inventory", "sample", "013SLB")
+	#print srch

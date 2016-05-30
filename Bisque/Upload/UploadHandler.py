@@ -18,8 +18,7 @@ from bqapi.util import *
 # Package imports #
 ###################
 sys.path.insert(0, '../')
-sys.path.insert(0, '/home/wtreible/.local/lib/python2.7/site-packages/')
-sys.path.insert(0, '/usr/lib64/python2.7/site-packages/Cython-0.20-py2.7-linux-x86_64.egg')
+sys.path.insert(0, '../Includes')
 import Util.Pickle
 
 #########################

@@ -1,0 +1,10 @@
+setup.cfg
+setup.py
+bs4.egg-info/PKG-INFO
+bs4.egg-info/SOURCES.txt
+bs4.egg-info/dependency_links.txt
+bs4.egg-info/not-zip-safe
+bs4.egg-info/pbr.json
+bs4.egg-info/top_level.txt
+pmba_basic/__init__.py
+pmba_basic/main.py
