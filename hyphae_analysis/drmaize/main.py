@@ -5,7 +5,7 @@ import time
 import numpy as np
 import scipy as sp
 from scipy import ndimage, signal
-
+import matplotlib.pyplot as plt
 import drmaize.utils
 import joblib
 import scipy
@@ -59,7 +59,8 @@ def hesseig(im, res, sz, nstds, orthstep, nrm=None):
     retval = np.zeros((len(d2dx2),) + im_pad.shape)
     im_pad = np.array(im_pad)
     
-    joblib.Parallel(n_jobs=-1)(
+    # TODO it looks like joblib memmaps the arrays as read-only, so writing to retval[i] fails and hangs
+    joblib.Parallel(n_jobs=-1, verbose=50)(
         joblib.delayed(drmaize.utils.add_out_arg(signal.fftconvolve))(im_pad, k, 'same', out=retval[i])
         for i, k in enumerate(d2dx2))
 
@@ -162,6 +163,7 @@ def segment(pth, fname, npz_name, exp_re, immsk):
 #     else:
 #         raise Exception
 
+    # TODO these thresholds don't work for all images
     cmsk = np.log(crn[crn > 1e-6]).mean() + 4.0 * np.log(crn[crn > 1e-6]).std(),  # 1.5, 4.5
     lmsk = np.log(lne[lne > 1e-6]).mean() + 3.5 * np.log(lne[lne > 1e-6]).std()  # 2.25
 
@@ -244,13 +246,6 @@ def skeleton(pth, npz_name, immsk):
         pruned[~immsk] = False
     else:
         pruned = np.zeros_like(skel)
-
-    slc = np.s_[:seg.shape[0] / 4, :seg.shape[1] / 4]
-
-#     plt.figure('skel')
-#     plt.imshow(pruned[slc], 'gray')
-#     plt.figure('pruned')
-#     plt.imshow((skel & ~pruned)[slc], 'gray')
 
     data['pruned'] = skel & ~pruned
     data['skel'] = pruned
@@ -351,18 +346,9 @@ def pipeline():
 
         # mask generation
         # TODO insert mask into cache file
-#         immsk = im > 4
-#         r = 2 ** 5
-#         selem = np.indices((2 * r + 1,) * 2, float)
-#         selem -= r
-#         selem **= 2
-#         selem = selem.sum(0)
-#         np.sqrt(selem, selem)
-#         selem = selem <= r
-#         immsk = drmaize.utils.fft_binary_erosion(immsk, selem)
-#         immsk[:r, :] = immsk[:, :r] = immsk[-r:, :] = immsk[:, -r:] = 0
-#                 
-#         scanal(pth, npz_name, im, immsk, sizes, nstds, orthstep, res)
+        immsk = im > 4
+
+        scanal(pth, npz_name, im, immsk, sizes, nstds, orthstep, res)
 #         segment(pth, fname, npz_name, exp_re, immsk)
 #         skeleton(pth, npz_name, immsk)
         continue
