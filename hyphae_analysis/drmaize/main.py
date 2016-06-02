@@ -14,6 +14,8 @@ from skimage import morphology
 import javabridge
 import bioformats
 import scipy.misc
+import tempfile
+import contextlib
 
 
 # import scipy.spatial as spspat
@@ -42,9 +44,18 @@ def hyst(lo, hi, structure=None):
     labels = ndimage.label(lo, structure=structure)
     labs = np.unique(labels[0][hi])
     labs = labs[labs > 0]
-    msk = np.zeros(labels[0].shape, bool)
+    
+#     msk = np.zeros(labels[0].shape, bool)    
+    fname = os.tempnam('/dev/shm/')
+    msk = np.memmap(fname, bool, 'w+', shape=labels[0].shape)
+    
     labels = np.array(labels[0])
-    joblib.Parallel(n_jobs=-1)(joblib.delayed(drmaize.utils.set_msk)(msk, labels, l) for l in labs)
+    
+    joblib.Parallel(n_jobs=-1, verbose=50)(joblib.delayed(drmaize.utils.set_msk)(msk, labels, l) for l in labs)
+    
+    msk = np.copy(msk)
+    os.remove(fname)
+    
     return msk
 
 
@@ -56,14 +67,19 @@ def hesseig(im, res, sz, nstds, orthstep, nrm=None):
     pad = tuple((p, p) for p in np.max(list(k.shape for k in d2dx2), 0) / 2)
     im_pad = np.pad(im, pad, 'edge').astype(float)
 
-    retval = np.zeros((len(d2dx2),) + im_pad.shape)
+#     retval = np.zeros((len(d2dx2),) + im_pad.shape)
     im_pad = np.array(im_pad)
     
-    # TODO it looks like joblib memmaps the arrays as read-only, so writing to retval[i] fails and hangs
+    fname = os.tempnam('/dev/shm/')
+    retval = np.memmap(fname, float, 'w+', shape=(len(d2dx2),) + im_pad.shape)
+    
     joblib.Parallel(n_jobs=-1, verbose=50)(
         joblib.delayed(drmaize.utils.add_out_arg(signal.fftconvolve))(im_pad, k, 'same', out=retval[i])
         for i, k in enumerate(d2dx2))
-
+        
+    retval = np.copy(retval)
+    os.remove(fname)
+    
     d2dx2 = np.empty((len(res),) * 2 + im.shape)
     for ind, (i, j) in enumerate(np.transpose(np.triu_indices(len(res)))):
         d2dx2[i, j] = d2dx2[j, i] = drmaize.utils.unpad(retval[ind], pad)
@@ -71,13 +87,18 @@ def hesseig(im, res, sz, nstds, orthstep, nrm=None):
     # eigen
     axes = range(len(res) + 2)
     d2dx2 = np.transpose(d2dx2, axes[2:] + axes[:2])
-    retval = np.zeros(d2dx2.shape[:-1])
 
-    joblib.Parallel(n_jobs=-1)(
+#     retval = np.zeros(d2dx2.shape[:-1])
+    fname = os.tempnam('/dev/shm/')
+    retval = np.memmap(fname, float, 'w+', shape=d2dx2.shape[:-1])
+    
+    joblib.Parallel(n_jobs=-1, verbose=50)(
         joblib.delayed(drmaize.utils.add_out_arg(np.linalg.eigvalsh))(d2dx2[i], out=retval[i])
         for i in range(len(d2dx2)))
 
     retval = np.concatenate(list(a[None, ...] for a in retval))
+    os.remove(fname)
+
     return retval
 
 
@@ -171,7 +192,7 @@ def segment(pth, fname, npz_name, exp_re, immsk):
     lne = (lne > lmsk)
     seg = hyst(lne, crn, np.ones((3, 3), bool))
     seg[~immsk] = 0
-
+    
     data['seg'] = seg
     
     npz_cache = drmaize.utils.file_cache(os.path.join(pth, 'results/segmentationfungus', npz_name), '/tmp/drmaize/')
@@ -318,7 +339,7 @@ def pipeline():
     
     metrics = []
 
-    for fname in sorted(fnames)[::-1]:
+    for fname in drmaize.utils.shuffle(fnames):
         print 'filename', fname        
     
         pth, fname = os.path.split(fname)
@@ -349,7 +370,7 @@ def pipeline():
         immsk = im > 4
 
         scanal(pth, npz_name, im, immsk, sizes, nstds, orthstep, res)
-#         segment(pth, fname, npz_name, exp_re, immsk)
+        segment(pth, fname, npz_name, exp_re, immsk)
 #         skeleton(pth, npz_name, immsk)
         continue
         
