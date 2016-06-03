@@ -16,6 +16,38 @@ import bioformats
 import scipy.misc
 import tempfile
 import contextlib
+import sys
+import warnings
+
+@contextlib.contextmanager
+def empty(shape, dtype):
+    filename = os.tempnam('/dev/shm')
+    a = np.memmap(filename, mode='w+', shape=shape, dtype=dtype)
+    try:
+        yield a
+        if sys.getrefcount(a) > 2:
+            warnings.warn('{} references to memory mapped file still exist'.format(sys.getrefcount(a) - 2))
+    finally:
+        del a
+        os.remove(filename)        
+        
+@contextlib.contextmanager
+def full(shape, fill_value, dtype):
+    with empty(shape, dtype) as a:
+        try:
+            a[...] = fill_value
+            yield a
+        finally:
+            del a
+            
+def zeros(shape, dtype):
+    return full(shape, 0, dtype)
+
+def ones(shape, dtype):
+    return full(shape, 1, dtype)
+
+def fromarray(a):
+    return full(a.shape, a, a.dtype)
 
 
 # import scipy.spatial as spspat
@@ -46,15 +78,10 @@ def hyst(lo, hi, structure=None):
     labs = labs[labs > 0]
     
 #     msk = np.zeros(labels[0].shape, bool)    
-    fname = os.tempnam('/dev/shm/')
-    msk = np.memmap(fname, bool, 'w+', shape=labels[0].shape)
-    
-    labels = np.array(labels[0])
-    
-    joblib.Parallel(n_jobs=-1, verbose=50)(joblib.delayed(drmaize.utils.set_msk)(msk, labels, l) for l in labs)
-    
-    msk = np.copy(msk)
-    os.remove(fname)
+    labels = np.array(labels[0])        
+    with zeros(labels.shape, bool) as msk:    
+        joblib.Parallel(n_jobs=-1,)(joblib.delayed(drmaize.utils.set_msk)(msk, labels, l) for l in labs)        
+        msk = np.copy(msk)
     
     return msk
 
@@ -70,15 +97,11 @@ def hesseig(im, res, sz, nstds, orthstep, nrm=None):
 #     retval = np.zeros((len(d2dx2),) + im_pad.shape)
     im_pad = np.array(im_pad)
     
-    fname = os.tempnam('/dev/shm/')
-    retval = np.memmap(fname, float, 'w+', shape=(len(d2dx2),) + im_pad.shape)
-    
-    joblib.Parallel(n_jobs=-1, verbose=50)(
-        joblib.delayed(drmaize.utils.add_out_arg(signal.fftconvolve))(im_pad, k, 'same', out=retval[i])
-        for i, k in enumerate(d2dx2))
-        
-    retval = np.copy(retval)
-    os.remove(fname)
+    with empty((len(d2dx2),) + im_pad.shape, float) as retval:
+        joblib.Parallel(n_jobs=-1,)(
+            joblib.delayed(drmaize.utils.add_out_arg(signal.fftconvolve))(im_pad, k, 'same', out=retval[i])
+            for i, k in enumerate(d2dx2))
+        retval = np.copy(retval)
     
     d2dx2 = np.empty((len(res),) * 2 + im.shape)
     for ind, (i, j) in enumerate(np.transpose(np.triu_indices(len(res)))):
@@ -89,15 +112,11 @@ def hesseig(im, res, sz, nstds, orthstep, nrm=None):
     d2dx2 = np.transpose(d2dx2, axes[2:] + axes[:2])
 
 #     retval = np.zeros(d2dx2.shape[:-1])
-    fname = os.tempnam('/dev/shm/')
-    retval = np.memmap(fname, float, 'w+', shape=d2dx2.shape[:-1])
-    
-    joblib.Parallel(n_jobs=-1, verbose=50)(
-        joblib.delayed(drmaize.utils.add_out_arg(np.linalg.eigvalsh))(d2dx2[i], out=retval[i])
-        for i in range(len(d2dx2)))
-
-    retval = np.concatenate(list(a[None, ...] for a in retval))
-    os.remove(fname)
+    with empty(d2dx2.shape[:-1], float) as retval:
+        joblib.Parallel(n_jobs=-1,)(
+            joblib.delayed(drmaize.utils.add_out_arg(np.linalg.eigvalsh))(d2dx2[i], out=retval[i])
+            for i in range(len(d2dx2)))    
+        retval = np.concatenate(list(a[None, ...] for a in retval))
 
     return retval
 
@@ -353,8 +372,9 @@ def pipeline():
             scipy.misc.imsave(os.path.join(pth, 'MIP', fname), im)
         print 'cache filename', cache_fname        
 
-        cache_fname = drmaize.utils.file_cache(os.path.join(pth, fname), '/tmp/drmaize/')
-        res = drmaize.utils.get_tif_res(cache_fname)
+#         cache_fname = drmaize.utils.file_cache(os.path.join(pth, fname), '/tmp/drmaize/')
+#         res = drmaize.utils.get_tif_res(cache_fname)
+        res = np.array((1.,) * 3)
         print 'physical resolution', res
         res = res[1:]
         res = res / np.min(res)
