@@ -25,6 +25,7 @@ def empty(shape, dtype):
     a = np.memmap(filename, mode='w+', shape=shape, dtype=dtype)
     try:
         yield a
+        a.flush()
         if sys.getrefcount(a) > 2:
             warnings.warn('{} references to memory mapped file still exist'.format(sys.getrefcount(a) - 2))
     finally:
@@ -245,10 +246,11 @@ def skeleton(pth, npz_name, immsk):
     leaf_edge = leaf != 0
 
     trim_edge = np.array(trim_edge)
-    leaf_edge = np.array(leaf_edge)
-    joblib.Parallel(n_jobs=-1)(
-        joblib.delayed(drmaize.utils.set_msk)(leaf_edge, trim_edge, l) for l in leaf_edge_vals)
-
+    with fromarray(leaf_edge) as leaf_edge:
+        joblib.Parallel(n_jobs=-1)(
+            joblib.delayed(drmaize.utils.set_msk)(leaf_edge, trim_edge, l) for l in leaf_edge_vals)
+        leaf_edge = np.copy(leaf_edge)
+        
     leaf_edge[(morphology.binary_dilation(leaf_edge, np.ones((3, 3), bool)) != 0) & (edge != 0)] = True
     leaf_edge = ndimage.label(leaf_edge, np.ones((3, 3), bool))[0]
 
@@ -383,7 +385,6 @@ def pipeline():
         print npz_name
 
         im = im.astype(float)
-#         im = utils.imscale(im, (.5,) * 2)
 
         # mask generation
         # TODO insert mask into cache file
@@ -391,7 +392,7 @@ def pipeline():
 
         scanal(pth, npz_name, im, immsk, sizes, nstds, orthstep, res)
         segment(pth, fname, npz_name, exp_re, immsk)
-#         skeleton(pth, npz_name, immsk)
+        skeleton(pth, npz_name, immsk)
         continue
         
         npz_cache = utils.file_cache(os.path.join(pth, 'results/segmentationfungus', npz_name), '/tmp/drmaize/')
