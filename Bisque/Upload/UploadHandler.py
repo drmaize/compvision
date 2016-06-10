@@ -11,7 +11,6 @@ from multiprocessing.pool import ApplyResult
 ##############
 from bqapi.comm import *
 from bqapi import BQSession, BQDataset, BQImage, BQFactory
-from bqapi.bqfeature import *
 from bqapi.util import *
 
 ###################

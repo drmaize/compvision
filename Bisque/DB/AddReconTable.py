@@ -12,7 +12,7 @@ xls_file_path = "/mnt/data27/wisser/drmaize/Bioimage_Metadata.xlsm"
 book = open_workbook(xls_file_path)
 
 files = [file for file in os.listdir(path) 
-         if os.path.isfile(os.path.join(path, file))]
+         if os.path.isfile(os.path.join(path, file)) and not f.startswith('.')]
 
 
 table = 'inventory'
@@ -74,13 +74,13 @@ for row_index in xrange(1, sheet.nrows):
 table = 'microImageSets'
 
 for file in files:
-	if file[0] != '.':
-		row_list = ['NULL']	
-		fn = os.path.basename(file)
-		row_list.append(fn[:27])
-		row_list.append(fn[27:32])
-		row_list.append('NULL')
-		row_list.append('NULL')
-		row_list.append('NULL')
-		#print row_list
-		dbh.insert_into(table,row_list)
+
+	row_list = ['NULL']	
+	fn = os.path.basename(file)
+	row_list.append(fn[:27])
+	row_list.append(fn[27:32])
+	row_list.append('NULL')
+	row_list.append('NULL')
+	row_list.append('NULL')
+	#print row_list
+	dbh.insert_into(table,row_list)

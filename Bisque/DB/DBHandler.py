@@ -44,20 +44,36 @@ class DBHandler(object):
 			print str(e)
 			self.conn.rollback()
 			
-	def search_col(self, table, col, search, mode=1):
+	def update_entry(self, table, set_dict, where_dict):
+	
 		'''
-		@mode: '1' = anywhere in string ('%<search_term>%')
-			   '2' = prefix ('<search_term>%')
-			   '3' = suffix ('%<search_term>')
+		UPDATE Customers
+		SET ContactName='Alfred Schmidt', City='Hamburg'
+		WHERE CustomerName='Alfreds Futterkiste';
 		'''
-		if mode == 1:
-			search = "%" + search + "%"
-		elif mode == 2:
-			search = search + "%"
-		elif mode == 3:
-			search = "%" + search
-			
-		query = "SELECT * FROM " + table + " WHERE " + col + " LIKE \'" + search + "\';"
+		
+		set_string = "SET "
+		second = False
+		for k,value in set_dict.iteritems():
+			set_string += k + "="
+			if second:
+				set_string += ','
+			if isinstance( value,  numbers.Number ):
+				set_string += "{}".format(value) 
+			else:
+				set_string += "'{}'".format(value)
+			second = True
+		
+		where_string = "WHERE"
+		second = False;
+		for col, search in where_dict.iteritems():
+			if second:
+				where_string += ' AND';
+			where_string += ' ' + col + " LIKE \'" + search + "\'"
+			second = True;
+		
+		query = "UPDATE " + str(table) + " " + set_string + " " + where_string + ";"
+		
 		cursor = self._connect()
 		try:
 			cursor.execute(query)
@@ -68,7 +84,41 @@ class DBHandler(object):
 			self.conn.rollback()
 			
 		return [row for row in cursor.fetchall()]
-		#select * from inventory where sample like '013SLB%';
+
+	def search_col(self, table, searches, mode=1):
+		'''
+		@mode: '1' = anywhere in string ('%<search_term>%')
+			   '2' = prefix ('<search_term>%')
+			   '3' = suffix ('%<search_term>')
+		'''
+		
+		query = "SELECT * FROM " + table + " WHERE" 
+		second = False;
+		for col, search in searches.iteritems():
+			if second:
+				query += ' AND ';
+			if mode == 1:
+				search_str = "%" + search + "%"
+			elif mode == 2:
+				search_str = search + "%"
+			elif mode == 3:
+				search_str = "%" + search
+			query += ' ' + col + " LIKE \'" + search_str + "\'"
+			second = True;
+			
+		query += ';'
+			
+		cursor = self._connect()
+		try:
+			cursor.execute(query)
+			self.conn.commit()
+		except Exception,e:
+			print "Failed: " + query
+			print str(e)
+			self.conn.rollback()
+			
+		return [row for row in cursor.fetchall()]
+
 	
 	def get_tables(self):
 		cursor = self._connect()
