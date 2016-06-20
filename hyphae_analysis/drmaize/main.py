@@ -6,7 +6,7 @@ import numpy as np
 import scipy as sp
 from scipy import ndimage, signal
 import matplotlib.pyplot as plt
-import drmaize.utils
+import utils
 import joblib
 import scipy
 import scipy.stats
