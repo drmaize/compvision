@@ -33,12 +33,15 @@ srcdir="/mnt/data27/wisser/drmaize/image_data/e${1}/microimages/raw/p${plate:1:2
 dstdir="/mnt/data27/wisser/drmaize/image_data/e${1}/microimages/reconstructed/HS"
 #icomdir="/home/$USER/iRODS/clients/icommands/bin"
 
-if [[ -d "${srcdir}/temp_1" && "$(ls -A ${srcdir}/temp_1/)" ]]; then
+if [[ -d "${srcdir}/temp_1" && "$(ls -A ${srcdir}/temp_1/*.lsm)" ]]; then
 mv ${srcdir}/temp_1/*.lsm ${srcdir}
 fi
 rename _L0 _L ${srcdir}/e${1}${plate}${slide}_${7}_R1_GR1_B1_L*.lsm
 rename _L0 _L ${srcdir}/e${1}${plate}${slide}_${7}_R1_GR1_B1_L*.lsm
 rename _L0 _L ${srcdir}/e${1}${plate}${slide}_${7}_R1_GR1_B1_L*.lsm
+rename _L0 _L ${srcdir}/e${1}${plate}${slide}_${7}_R1_GR1_B2_L*.lsm
+rename _L0 _L ${srcdir}/e${1}${plate}${slide}_${7}_R1_GR1_B2_L*.lsm
+rename _L0 _L ${srcdir}/e${1}${plate}${slide}_${7}_R1_GR1_B2_L*.lsm
 
 
 #convert format to tiff
@@ -47,11 +50,22 @@ echo "open(\"${wkdir}/Shading_correction_red.lsm\");" > ${prfx}${fname}
 echo "saveAs(\"${wkdir}/Shading_correction_red.tif\");" >> ${prfx}${fname}
 echo "open(\"${wkdir}/Shading_correction_blue.lsm\");" >> ${prfx}${fname}
 echo "saveAs(\"${wkdir}/Shading_correction_blue.tif\");" >> ${prfx}${fname}
+echo "open(\"${wkdir}/Shading_correction_white.lsm\");" >> ${prfx}${fname}
+echo "saveAs(\"${wkdir}/Shading_correction_white.tif\");" >> ${prfx}${fname}
 echo "for(i=${3}; i<$((${3}+${4}*${5})); i++){" >> ${prfx}${fname}
 else
 echo "for(i=${3}; i<$((${3}+${4}*${5})); i++){" > ${prfx}${fname}
 fi
+echo "print(i);" >> ${prfx}${fname}
+if [[ -f ${srcdir}/e${1}${plate}${slide}_${7}_R1_GR1_B2_L1.lsm ]]; then
+echo "open(\"${srcdir}/e${1}${plate}${slide}_${7}_R1_GR1_B2_L\" + i + \".lsm\");" >> ${prfx}${fname}
 echo "open(\"${srcdir}/e${1}${plate}${slide}_${7}_R1_GR1_B1_L\" + i + \".lsm\");" >> ${prfx}${fname}
+echo "run(\"Split Channels\");" >> ${prfx}${fname}
+echo "run(\"Merge Channels...\", \"c1=C1-e${1}${plate}${slide}_${7}_R1_GR1_B1_L\" + i + \".lsm c2=C2-e${1}${plate}${slide}_${7}_R1_GR1_B1_L\" + i + \".lsm c3=e${1}${plate}${slide}_${7}_R1_GR1_B2_L\" + i + \".lsm create\");" >> ${prfx}${fname}
+echo "run(\"Make Composite\");" >> ${prfx}${fname}
+else
+echo "open(\"${srcdir}/e${1}${plate}${slide}_${7}_R1_GR1_B1_L\" + i + \".lsm\");" >> ${prfx}${fname}
+fi
 echo "ti=i-${3};" >> ${prfx}${fname}
 echo "x=ti%${4};" >> ${prfx}${fname}
 echo "y=(ti-x)/${4};" >> ${prfx}${fname}
@@ -79,6 +93,13 @@ echo "var stats = fsp.getStatistics();" >> ${prfx}${lname}
 echo "fsp.multiply(1.0/stats.max);" >> ${prfx}${lname}
 echo "var simg2 = new ImagePlus(\"shade2\",fsp);" >> ${prfx}${lname}
 echo "shading.close();" >> ${prfx}${lname}
+echo "var shading = IJ.openImage(\"${wkdir}/Shading_correction_white.tif\");" >> ${prfx}${lname}
+echo "var sp = shading.getProcessor();" >> ${prfx}${lname}
+echo "var fsp = sp.convertToFloat();" >> ${prfx}${lname}
+echo "var stats = fsp.getStatistics();" >> ${prfx}${lname}
+echo "fsp.multiply(1.0/stats.max);" >> ${prfx}${lname}
+echo "var simg3 = new ImagePlus(\"shade3\",fsp);" >> ${prfx}${lname}
+echo "shading.close();" >> ${prfx}${lname}
 echo "var ic = new ImageCalculator();" >> ${prfx}${lname}
 
 echo "for(var i=${3}; i<$((${3}+${4}*${5})); i++){" >> ${prfx}${lname}
@@ -87,11 +108,21 @@ echo "	var imgr= ic.run(\"Divide create 32-bit stack\", img, simg1);" >> ${prfx}
 echo "	var imgs1 = imgr.getStack();" >> ${prfx}${lname}
 echo "	var imgr= ic.run(\"Divide create 32-bit stack\", img, simg2);" >> ${prfx}${lname}
 echo "	var imgs2 = imgr.getStack();" >> ${prfx}${lname}
+echo "	var imgr= ic.run(\"Divide create 32-bit stack\", img, simg3);" >> ${prfx}${lname}
+echo "	var imgs3 = imgr.getStack();" >> ${prfx}${lname}
 echo "	var n = imgs1.getSize();" >> ${prfx}${lname}
 echo "	var nimgs = new ImageStack(imgs1.getWidth(),imgs1.getHeight(),imgs1.getSize());" >> ${prfx}${lname}
 echo "	var pfx=\"\";" >> ${prfx}${lname}
 echo "	var k=1000; while(i < k){pfx=pfx+\"0\"; k=k/10;}" >> ${prfx}${lname}
-echo "	for(var j=1; j<=n; j=j+2){" >> ${prfx}${lname}
+echo "	for(var j=1; j<=n; j=j+n/${6}){" >> ${prfx}${lname}
+echo "      if(n/${6} == 1){" >> ${prfx}${lname}
+echo "		var fimp = imgs3.getProcessor(j);" >> ${prfx}${lname}
+echo "		fimp.setInterpolationMethod(1);" >> ${prfx}${lname}
+echo "		fimp.setBackgroundValue(0);" >> ${prfx}${lname}
+echo "		fimp.rotate(-1);" >> ${prfx}${lname}
+echo "		var bimgp = fimp.convertToByte(false);" >> ${prfx}${lname}
+echo "		nimgs.setProcessor(bimgp,j);}" >> ${prfx}${lname}
+echo "      else if(n/${6}==2){" >> ${prfx}${lname}
 echo "		var fimp = imgs1.getProcessor(j);" >> ${prfx}${lname}
 echo "		fimp.setInterpolationMethod(1);" >> ${prfx}${lname}
 echo "		fimp.setBackgroundValue(0);" >> ${prfx}${lname}
@@ -104,13 +135,34 @@ echo "		fimp.setBackgroundValue(0);" >> ${prfx}${lname}
 echo "		fimp.rotate(-1);" >> ${prfx}${lname}
 echo "		var bimgp = fimp.convertToByte(false);" >> ${prfx}${lname}
 echo "		nimgs.setProcessor(bimgp,j+1);}" >> ${prfx}${lname}
+echo "      else if(n/${6}==3){" >> ${prfx}${lname}
+echo "		var fimp = imgs1.getProcessor(j);" >> ${prfx}${lname}
+echo "		fimp.setInterpolationMethod(1);" >> ${prfx}${lname}
+echo "		fimp.setBackgroundValue(0);" >> ${prfx}${lname}
+echo "		fimp.rotate(-1);" >> ${prfx}${lname}
+echo "		var bimgp = fimp.convertToByte(false);" >> ${prfx}${lname}
+echo "		nimgs.setProcessor(bimgp,j);" >> ${prfx}${lname}
+echo "		var fimp = imgs2.getProcessor(j+1);" >> ${prfx}${lname}
+echo "		fimp.setInterpolationMethod(1);" >> ${prfx}${lname}
+echo "		fimp.setBackgroundValue(0);" >> ${prfx}${lname}
+echo "		fimp.rotate(-1);" >> ${prfx}${lname}
+echo "		var bimgp = fimp.convertToByte(false);" >> ${prfx}${lname}
+echo "		nimgs.setProcessor(bimgp,j+1);" >> ${prfx}${lname}
+echo "		var fimp = imgs3.getProcessor(j+2);" >> ${prfx}${lname}
+echo "		fimp.setInterpolationMethod(1);" >> ${prfx}${lname}
+echo "		fimp.setBackgroundValue(0);" >> ${prfx}${lname}
+echo "		fimp.rotate(-1);" >> ${prfx}${lname}
+echo "		var bimgp = fimp.convertToByte(false);" >> ${prfx}${lname}
+echo "		nimgs.setProcessor(bimgp,j+2);}}" >> ${prfx}${lname}
 echo "	var imgsr = new ImagePlus(\"res\",nimgs);" >> ${prfx}${lname}
 echo "	IJ.saveAs(imgsr, \"Tiff\",\"${wkdir}/exp${1}${plate}${slide}_R1_GR1_B1_L\" + pfx + i + \".tif\");" >> ${prfx}${lname}
 echo "	img.close();" >> ${prfx}${lname}
 echo "	imgsr.close();" >> ${prfx}${lname}
 echo "	imgr.close();" >> ${prfx}${lname}
 echo "	IJ.run(\"Collect Garbage\");}" >> ${prfx}${lname}
-echo "simg.close();" >> ${prfx}${lname}
+echo "simg1.close();" >> ${prfx}${lname}
+echo "simg2.close();" >> ${prfx}${lname}
+echo "simg3.close();" >> ${prfx}${lname}
 echo "IJ.run(\"Collect Garbage\");" >> ${prfx}${lname}
 
 #tile the images
@@ -119,6 +171,10 @@ echo "run(\"Grid/Collection stitching\", \"type=[Grid: row-by-row] order=[Right 
 
 #combine all tiled slices into 2 tifs for fungal and leaf
 echo "runMacro(\"${prfx}${mname}\");" > ${prfx}${gname}
+echo "open(\"${wkdir}/exp${1}${plate}${slide}_R1_GR1_B1_L${3}.tif\");" >> ${prfx}${gname}
+echo "getDimensions(w, h, channels, slices, frames);" >> ${prfx}${gname}
+echo "close();" >> ${prfx}${gname}
+echo "if(channels*slices*frames/${6} == 2){" >> ${prfx}${gname}
 echo "run(\"Image Sequence...\", \"open=${wkdir}/tiled/img_t1_z${npfx}1_c1 number=${6} starting=1 increment=2 scale=100 file=img sort\");" >> ${prfx}${gname}
 echo "saveAs(\"Tiff\", \"${dstdir}/exp${1}${2}${7}rf001.tif\");" >> ${prfx}${gname}
 echo "close();" >> ${prfx}${gname}
@@ -126,7 +182,25 @@ echo "run(\"Image Sequence...\", \"open=${wkdir}/tiled/img_t1_z${npfx}1_c1 numbe
 echo "saveAs(\"Tiff\", \"${dstdir}/exp${1}${2}${7}rl001.tif\");" >> ${prfx}${gname}
 echo "close();" >> ${prfx}${gname}
 echo "exec(\"java -jar ${prfx}ImageConverter.jar ${srcdir}/e${1}${plate}${slide}_${7}_R1_GR1_B1_L${3}.lsm ${dstdir}/exp${1}${2}${7}rf001.tif ${dstdir}/e${1}${2}x${9}_${7}rf001.ome.tif\");" >> ${prfx}${gname}
+echo "exec(\"java -jar ${prfx}ImageConverter.jar ${srcdir}/e${1}${plate}${slide}_${7}_R1_GR1_B1_L${3}.lsm ${dstdir}/exp${1}${2}${7}rl001.tif ${dstdir}/e${1}${2}x${9}_${7}rl001.ome.tif\");}" >> ${prfx}${gname}
+echo "else if(channels*slices*frames/${6} == 1){" >> ${prfx}${gname}
+echo "run(\"Image Sequence...\", \"open=${wkdir}/tiled/img_t1_z${npfx}1_c1 number=${6} starting=1 increment=1 scale=100 file=img sort\");" >> ${prfx}${gname}
+echo "saveAs(\"Tiff\", \"${dstdir}/exp${1}${2}${7}rb001.tif\");" >> ${prfx}${gname}
+echo "close();" >> ${prfx}${gname}
+echo "exec(\"java -jar ${prfx}ImageConverter.jar ${srcdir}/e${1}${plate}${slide}_${7}_R1_GR1_B1_L${3}.lsm ${dstdir}/exp${1}${2}${7}rb001.tif ${dstdir}/e${1}${2}x${9}_${7}rb001.ome.tif\");}" >> ${prfx}${gname}
+echo "else if(channels*slices*frames/${6} == 3){" >> ${prfx}${gname}
+echo "run(\"Image Sequence...\", \"open=${wkdir}/tiled/img_t1_z${npfx}1_c1 number=${6} starting=1 increment=3 scale=100 file=img sort\");" >> ${prfx}${gname}
+echo "saveAs(\"Tiff\", \"${dstdir}/exp${1}${2}${7}rf001.tif\");" >> ${prfx}${gname}
+echo "close();" >> ${prfx}${gname}
+echo "run(\"Image Sequence...\", \"open=${wkdir}/tiled/img_t1_z${npfx}1_c1 number=${6} starting=2 increment=3 scale=100 file=img sort\");" >> ${prfx}${gname}
+echo "saveAs(\"Tiff\", \"${dstdir}/exp${1}${2}${7}rl001.tif\");" >> ${prfx}${gname}
+echo "close();" >> ${prfx}${gname}
+echo "run(\"Image Sequence...\", \"open=${wkdir}/tiled/img_t1_z${npfx}1_c1 number=${6} starting=3 increment=3 scale=100 file=img sort\");" >> ${prfx}${gname}
+echo "saveAs(\"Tiff\", \"${dstdir}/exp${1}${2}${7}rb001.tif\");" >> ${prfx}${gname}
+echo "close();" >> ${prfx}${gname}
+echo "exec(\"java -jar ${prfx}ImageConverter.jar ${srcdir}/e${1}${plate}${slide}_${7}_R1_GR1_B1_L${3}.lsm ${dstdir}/exp${1}${2}${7}rf001.tif ${dstdir}/e${1}${2}x${9}_${7}rf001.ome.tif\");" >> ${prfx}${gname}
 echo "exec(\"java -jar ${prfx}ImageConverter.jar ${srcdir}/e${1}${plate}${slide}_${7}_R1_GR1_B1_L${3}.lsm ${dstdir}/exp${1}${2}${7}rl001.tif ${dstdir}/e${1}${2}x${9}_${7}rl001.ome.tif\");" >> ${prfx}${gname}
+echo "exec(\"java -jar ${prfx}ImageConverter.jar ${srcdir}/e${1}${plate}${slide}_${7}_R1_GR1_B1_L${3}.lsm ${dstdir}/exp${1}${2}${7}rb001.tif ${dstdir}/e${1}${2}x${9}_${7}rb001.ome.tif\");}" >> ${prfx}${gname}
 
 #downsample
 echo "importClass(Packages.java.io.File);" > ${prfx}${dname}
@@ -155,6 +229,8 @@ echo "exec(\"${prfx}${tname}\");" >> ${prfx}${stname}
 echo "runMacro(\"${prfx}${dname}\");" >> ${prfx}${stname}
 echo "exec(\"rm ${dstdir}/exp${1}${2}${7}rf001.tif\");" >> ${prfx}${stname}
 echo "exec(\"rm ${dstdir}/exp${1}${2}${7}rl001.tif\");" >> ${prfx}${stname}
+echo "exec(\"rm ${dstdir}/exp${1}${2}${7}rb001.tif\");" >> ${prfx}${stname}
+
 #echo "exec(\"${icomdir}/iinit < ${prfx}pwd.txt\");" >> ${prfx}${stname}
 #echo "exec(\"${icomdir}/icd /iplant/home/drmaize/bisque_data/${1}/\");" >> ${prfx}${stname}
 #echo "exec(\"${icomdir}/iput -f ${dstdir}/e${1}${2}x${9}_${7}rf001.ome.tif\");" >> ${prfx}${stname}
@@ -162,6 +238,7 @@ echo "exec(\"rm ${dstdir}/exp${1}${2}${7}rl001.tif\");" >> ${prfx}${stname}
 #echo "exec(\"${icomdir}/icd /iplant/home/drmaize/bisque_data/uploads/${1}/\");" >> ${prfx}${stname}
 #echo "exec(\"${icomdir}/iput -f ${dstdir}/downsampled/e${1}${2}x${9}_${7}rf001.tif\");" >> ${prfx}${stname}
 #echo "exec(\"${icomdir}/iexit\");" >> ${prfx}${stname}
+
 echo "exec(\"rm -rf ${wkdir}\");" >> ${prfx}${stname}
 echo "exec(\"rm ${prfx}${tname}\");" >> ${prfx}${stname}
 echo "exec(\"rm ${prfx}${mname}\");" >> ${prfx}${stname}
@@ -193,6 +270,15 @@ echo "else" >> ${prfx}${tname}
 	echo "cp ${prfx}Shading_correction_blue.tif ${wkdir}" >> ${prfx}${tname}
 	#echo "mv ${wkdir}/Shading_correction.tif ${wkdir}/Shading_correction_blue.tif" >> ${prfx}${tname}
 echo "fi" >> ${prfx}${tname}
+echo "if [[ -f ${srcdir}/lightprofile_white_${7}.tif ]]; then" >> ${prfx}${tname}
+	echo "cp ${srcdir}/lightprofile_white_${7}.tif ${wkdir}" >> ${prfx}${tname}
+	echo "mv ${wkdir}/lightprofile_white_${7}.tif ${wkdir}/Shading_correction_white.tif" >> ${prfx}${tname}
+echo "elif [[ -f ${srcdir}/lightprofile_white_${7}.lsm ]]; then" >> ${prfx}${tname}
+	echo "cp ${srcdir}/lightprofile_white_${7}.lsm ${wkdir}" >> ${prfx}${tname}
+	echo "mv ${wkdir}/lightprofile_white_${7}.lsm ${wkdir}/Shading_correction_white.lsm" >> ${prfx}${tname}
+echo "else" >> ${prfx}${tname}
+	echo "cp ${prfx}Shading_correction_white.tif ${wkdir}" >> ${prfx}${tname}
+echo "fi" >> ${prfx}${tname}
 chmod 777 ${prfx}${tname}
 
 #clean all temporary files
@@ -209,13 +295,12 @@ chmod 777 ${prfx}${cname}
 
 echo "#!/bin/bash" > ${prfx}${sname}
 echo "#PBS -N tiling_${1}${2}${7}" >> ${prfx}${sname}
-echo "#PBS -l nodes=biohen27:ppn=1" >> ${prfx}${sname}
-echo "#PBS -l walltime=8:00:00,cput=8:00:00" >> ${prfx}${sname}
+echo "#PBS -l nodes=biomix17:ppn=1" >> ${prfx}${sname}
+echo "#PBS -l walltime=24:00:00,cput=24:00:00" >> ${prfx}${sname}
 
-echo "ImageJ -batch ${prfx}${stname}" >> ${prfx}${sname}
+echo "/usr/local/Fiji.app/ImageJ-linux64 -batch ${prfx}${stname}" >> ${prfx}${sname}
 
 chmod 777 ${prfx}${sname}
 qsub ${prfx}${sname}
 
 #${prfx}${sname}
-
