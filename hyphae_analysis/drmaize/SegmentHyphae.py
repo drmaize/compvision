@@ -5,7 +5,7 @@ import collections
 
 import numpy as np
 import scipy as sp
-from scipy import ndimage, signal
+from scipy import ndimage, signal, stats, spatial
 import matplotlib.pyplot as plt
 import joblib
 import scipy
@@ -19,15 +19,18 @@ import contextlib
 import sys
 import warnings
 import utils
+from collections import OrderedDict
+import csv
 
 #############
-## Globals ##
+# # Globals ##
 #############
 
+# results_path = 'results/segmentationfungus'
 results_path = 'wtreible_results/segmentationfungus'
 
 ###########
-## Begin ##
+# # Begin ##
 ###########
 
 @contextlib.contextmanager
@@ -69,7 +72,7 @@ def hyst(lo, hi, structure=None):
 	labs = np.unique(labels[0][hi])
 	labs = labs[labs > 0]
 	
-#	 msk = np.zeros(labels[0].shape, bool)	
+# 	 msk = np.zeros(labels[0].shape, bool)	
 	labels = np.array(labels[0])		
 	with zeros(labels.shape, bool) as msk:	
 		joblib.Parallel(n_jobs=-1,)(joblib.delayed(utils.set_msk)(msk, labels, l) for l in labs)		
@@ -86,7 +89,7 @@ def hesseig(im, res, sz, nstds, orthstep, nrm=None):
 	pad = tuple((p, p) for p in np.max(list(k.shape for k in d2dx2), 0) / 2)
 	im_pad = np.pad(im, pad, 'edge').astype(float)
 
-#	 retval = np.zeros((len(d2dx2),) + im_pad.shape)
+# 	 retval = np.zeros((len(d2dx2),) + im_pad.shape)
 	im_pad = np.array(im_pad)
 	
 	with empty((len(d2dx2),) + im_pad.shape, float) as retval:
@@ -103,7 +106,7 @@ def hesseig(im, res, sz, nstds, orthstep, nrm=None):
 	axes = range(len(res) + 2)
 	d2dx2 = np.transpose(d2dx2, axes[2:] + axes[:2])
 
-#	 retval = np.zeros(d2dx2.shape[:-1])
+# 	 retval = np.zeros(d2dx2.shape[:-1])
 	with empty(d2dx2.shape[:-1], float) as retval:
 		joblib.Parallel(n_jobs=-1,)(
 			joblib.delayed(utils.add_out_arg(np.linalg.eigvalsh))(d2dx2[i], out=retval[i])
@@ -180,20 +183,20 @@ def segment(pth, fname, npz_name, exp_re, immsk):
 
 	m = re.match(exp_re, fname)
 	print m.group(3)
-#	 if m.group(3) == '01':
-#		 # 12 HPI
-#		 cmsk = 2.25, 7.5
-#		 lmsk = 3.75
-#	 elif m.group(3) == '02':
-#		 # 24 HPI
-#		 cmsk = 2., 5.25
-#		 lmsk = 2.75
-#	 elif m.group(3) == '03':
-#		 # 48 HPI
-#		 cmsk = 1.5, 5.
-#		 lmsk = 2.25
-#	 else:
-#		 raise Exception
+# 	 if m.group(3) == '01':
+# 		 # 12 HPI
+# 		 cmsk = 2.25, 7.5
+# 		 lmsk = 3.75
+# 	 elif m.group(3) == '02':
+# 		 # 24 HPI
+# 		 cmsk = 2., 5.25
+# 		 lmsk = 2.75
+# 	 elif m.group(3) == '03':
+# 		 # 48 HPI
+# 		 cmsk = 1.5, 5.
+# 		 lmsk = 2.25
+# 	 else:
+# 		 raise Exception
 
 	# TODO these thresholds don't work for all images
 	cmsk = np.log(crn[crn > 1e-6]).mean() + 4.0 * np.log(crn[crn > 1e-6]).std(),  # 1.5, 4.5
@@ -302,7 +305,8 @@ def pipeline(experiment):
 	'/mnt/data27/wisser/drmaize/image_data/'
  
 	exp_re = 'e(\d{3})(SLB|NLB)p(\d{2})w([A-D])([1-6])x20_(\d*)rf001\.ome\.tif'
-	data_dir = '/mnt/data27/wisser/drmaize/image_data'
+	# data_dir = '/home/rhein/mnt/drmaize/image_data/'  
+    data_dir = '/mnt/data27/wisser/drmaize/image_data'
 	sub_dir = 'microimages/reconstructed/HS'
 	
 	
@@ -323,40 +327,40 @@ def pipeline(experiment):
 			fnames.append(os.path.join(data_dir, exp, sub_dir, f))
 			print f
 			
-#			 if int(m.group(3)) == 1:
-#				 if 1 <= int(m.group(5)) <= 3:
-#					 if m.group(6) == '1506111930':
-#						 fnames.append(os.path.join(data_dir, exp, sub_dir, f))
-#						 print f
-#				 if 4 <= int(m.group(5)) <= 6:
-#					 if m.group(6) == '1506121515':
-#						 fnames.append(os.path.join(data_dir, exp, sub_dir, f))
-#						 print f
-#			 elif int(m.group(3)) == 2:
-#				 if 1 <= int(m.group(5)) <= 3:
-#					 if m.group(6) == '1506121700':
-#						 fnames.append(os.path.join(data_dir, exp, sub_dir, f))
-#						 print f
-#				 if 4 <= int(m.group(5)) <= 6:
-#					 if m.group(6) == '1506221400':
-#						 fnames.append(os.path.join(data_dir, exp, sub_dir, f))
-#						 print f
-#			 elif int(m.group(3)) == 3:
-#				 if 1 <= int(m.group(5)) <= 3:
-#					 if m.group(6) == '1505041720':
-#						 fnames.append(os.path.join(data_dir, exp, sub_dir, f))
-#						 print f
-#				 if 4 <= int(m.group(5)) <= 6:
-#					 if m.group(6) == '1508062130':
-#						 fnames.append(os.path.join(data_dir, exp, sub_dir, f))
-#						 print f
+# 			 if int(m.group(3)) == 1:
+# 				 if 1 <= int(m.group(5)) <= 3:
+# 					 if m.group(6) == '1506111930':
+# 						 fnames.append(os.path.join(data_dir, exp, sub_dir, f))
+# 						 print f
+# 				 if 4 <= int(m.group(5)) <= 6:
+# 					 if m.group(6) == '1506121515':
+# 						 fnames.append(os.path.join(data_dir, exp, sub_dir, f))
+# 						 print f
+# 			 elif int(m.group(3)) == 2:
+# 				 if 1 <= int(m.group(5)) <= 3:
+# 					 if m.group(6) == '1506121700':
+# 						 fnames.append(os.path.join(data_dir, exp, sub_dir, f))
+# 						 print f
+# 				 if 4 <= int(m.group(5)) <= 6:
+# 					 if m.group(6) == '1506221400':
+# 						 fnames.append(os.path.join(data_dir, exp, sub_dir, f))
+# 						 print f
+# 			 elif int(m.group(3)) == 3:
+# 				 if 1 <= int(m.group(5)) <= 3:
+# 					 if m.group(6) == '1505041720':
+# 						 fnames.append(os.path.join(data_dir, exp, sub_dir, f))
+# 						 print f
+# 				 if 4 <= int(m.group(5)) <= 6:
+# 					 if m.group(6) == '1508062130':
+# 						 fnames.append(os.path.join(data_dir, exp, sub_dir, f))
+# 						 print f
 	
 	seed = time.time()
 	print 'seed', seed
 	
 	metrics = []
 
-	for fname in utils.shuffle(fnames):
+	for fname in utils.shuffle(fnames, 0xDeadBeef):
 		print 'filename', fname		
 	
 		pth, fname = os.path.split(fname)
@@ -370,8 +374,8 @@ def pipeline(experiment):
 			scipy.misc.imsave(os.path.join(pth, 'MIP', fname), im)
 		print 'cache filename', cache_fname		
 
-#		 cache_fname = drmaize.utils.file_cache(os.path.join(pth, fname), '/tmp/drmaize/')
-#		 res = utils.get_tif_res(cache_fname)
+# 		 cache_fname = drmaize.utils.file_cache(os.path.join(pth, fname), '/tmp/drmaize/')
+# 		 res = utils.get_tif_res(cache_fname)
 		res = np.array((1.,) * 3)
 		print 'physical resolution', res
 		res = res[1:]
@@ -389,34 +393,18 @@ def pipeline(experiment):
 		scanal(pth, npz_name, im, immsk, sizes, nstds, orthstep, res)
 		segment(pth, fname, npz_name, exp_re, immsk)
 		skeleton(pth, npz_name, immsk)
-		continue
 		
 		npz_cache = utils.file_cache(os.path.join(pth, results_path, npz_name), '/tmp/drmaize/')
 		with np.load(npz_cache, 'r') as data:
 			data = dict(data)
 						
-#		 for k, v in data.items():
-#			 plt.figure(k)
-#			 plt.imshow(v[slc], 'gray')
-			
 		seg = data['seg']
-		skel, dist = skmorph.medial_axis(seg, return_distance=True)
+		skel, dist = morphology.medial_axis(seg, return_distance=True)
 		node, edge, leaf = (ndimage.label(g, np.ones((3, 3), bool))[0] for g in utils.skel2graph(skel))
 
 		dist = dist * 2.6240291219148313
-#		 plt.figure('dist')
-#		 plt.imshow(dist[slc], 'gray', interpolation='nearest')
-#		 
-#		 plt.figure('node')
-#		 plt.imshow(node[slc], 'gray', interpolation='nearest')
-#		 plt.figure('edge')
-#		 plt.imshow(edge[slc], 'gray', interpolation='nearest')
-#		 plt.figure('leaf')
-#		 plt.imshow(leaf[slc], 'gray', interpolation='nearest')
-#				
-#		 plt.show()
 		
-#		 exp_re = 'exp(\d{3})(SLB|NLB)p(\d{2})w([A-D])([1-6])(\d*)rf002\.ome\.tif'
+# 		 exp_re = 'exp(\d{3})(SLB|NLB)p(\d{2})w([A-D])([1-6])(\d*)rf002\.ome\.tif'
 		m = re.match(exp_re, fname)
 		met_row = OrderedDict()
 		met_row['experiment'] = m.group(1)
@@ -432,27 +420,27 @@ def pipeline(experiment):
 		met_row['width_mean'] = np.mean(dist[seg > 0].flat)
 		met_row['width_median'] = np.median(dist[seg > 0].flat)
 		met_row['width_variance'] = np.var(dist[seg > 0].flat)
-		met_row['width_skewness'] = spstat.skew(dist[seg > 0].flat)
-		met_row['width_kurtosis'] = spstat.kurtosis(dist[seg > 0].flat)
+		met_row['width_skewness'] = stats.skew(dist[seg > 0].flat)
+		met_row['width_kurtosis'] = stats.kurtosis(dist[seg > 0].flat)
 		
 		met_row['leaf'] = np.count_nonzero(leaf)
 		met_row['edge'] = np.count_nonzero(edge)
 		met_row['node'] = np.count_nonzero(node)
 	
 			
-#		 fname = os.path.join(pth, fname)
-#		 head, tail = os.path.split(fname)
-#		 tail = tail.replace('rf001.ome.tif', '_topsurface_optimized1.txt')
-#		 surf = os.path.join(head, 'surfacemap', tail)
-#		 cache_fname = utils.file_cache(surf, '/tmp/drmaize')
-#		 surf = np.loadtxt(cache_fname, np.float32, delimiter=',')
+# 		 fname = os.path.join(pth, fname)
+# 		 head, tail = os.path.split(fname)
+# 		 tail = tail.replace('rf001.ome.tif', '_topsurface_optimized1.txt')
+# 		 surf = os.path.join(head, 'surfacemap', tail)
+# 		 cache_fname = utils.file_cache(surf, '/tmp/drmaize')
+# 		 surf = np.loadtxt(cache_fname, np.float32, delimiter=',')
 # 
-#		 fname = os.path.join(pth, fname)
-#		 tif = fname.replace('rf', 'rl')
-#		 cache_fname = utils.file_cache(tif, '/tmp/drmaize')
-#		 host = utils.get_tif(cache_fname)		
+# 		 fname = os.path.join(pth, fname)
+# 		 tif = fname.replace('rf', 'rl')
+# 		 cache_fname = utils.file_cache(tif, '/tmp/drmaize')
+# 		 host = utils.get_tif(cache_fname)		
 # #		 surf = np.argmax(host, 0).astype(np.float32)
-#		 host = host.argmax(0)	  
+# 		 host = host.argmax(0)	  
 # # #		 
 # # #		 mn, mx = 0.0, 149.0  # surf.min(), surf.max()
 # # #		 print mn, mx
@@ -474,99 +462,99 @@ def pipeline(experiment):
 # #		 plt.imshow(surf, 'gray', interpolation='nearest')
 # #		 
 # #		 return plt.show()
-#		 
-#		 cache_fname = utils.file_cache(fname, '/tmp/drmaize')
-#		 fung = utils.get_tif(cache_fname)
-#		 fung = np.argmax(fung, 0)
-#		 
-#		 tail1 = tail.replace('_topsurface_optimized1.txt', '_hyphsurface_skel.txt')
-#		 np.savetxt(os.path.join(head, 'surfacemap', tail1), fung * (skel > 0), delimiter=',')
-#		 print os.path.join(head, 'surfacemap', tail1)
-#		 
-#		 tail2 = tail.replace('_topsurface_optimized1.txt', '_hyphsurface_seg.txt')
-#		 np.savetxt(os.path.join(head, 'surfacemap', tail2), fung * (seg > 0), delimiter=',')
-#		 print os.path.join(head, 'surfacemap', tail2)
-#		 
-#		 fung = fung.astype(np.float32)
-#		 dpth = (fung - surf)
-#		 dpth *= 1.2
-#		 
-#		 met_row['depth_mean'] = np.mean(dpth[skel > 0].flat)
-#		 met_row['depth_median'] = np.median(dpth[skel > 0].flat)
-#		 met_row['depth_variance'] = np.var(dpth[skel > 0].flat)
-#		 met_row['depth_skewness'] = spstat.skew(dpth[skel > 0].flat)
-#		 met_row['depth_kurtosis'] = spstat.kurtosis(dpth[skel > 0].flat)
-#		 
-#		 for k in (met_row):
-#			 print k, met_row[k]
+# 		 
+# 		 cache_fname = utils.file_cache(fname, '/tmp/drmaize')
+# 		 fung = utils.get_tif(cache_fname)
+# 		 fung = np.argmax(fung, 0)
+# 		 
+# 		 tail1 = tail.replace('_topsurface_optimized1.txt', '_hyphsurface_skel.txt')
+# 		 np.savetxt(os.path.join(head, 'surfacemap', tail1), fung * (skel > 0), delimiter=',')
+# 		 print os.path.join(head, 'surfacemap', tail1)
+# 		 
+# 		 tail2 = tail.replace('_topsurface_optimized1.txt', '_hyphsurface_seg.txt')
+# 		 np.savetxt(os.path.join(head, 'surfacemap', tail2), fung * (seg > 0), delimiter=',')
+# 		 print os.path.join(head, 'surfacemap', tail2)
+# 		 
+# 		 fung = fung.astype(np.float32)
+# 		 dpth = (fung - surf)
+# 		 dpth *= 1.2
+# 		 
+# 		 met_row['depth_mean'] = np.mean(dpth[skel > 0].flat)
+# 		 met_row['depth_median'] = np.median(dpth[skel > 0].flat)
+# 		 met_row['depth_variance'] = np.var(dpth[skel > 0].flat)
+# 		 met_row['depth_skewness'] = spstat.skew(dpth[skel > 0].flat)
+# 		 met_row['depth_kurtosis'] = spstat.kurtosis(dpth[skel > 0].flat)
+# 		 
+# 		 for k in (met_row):
+# 			 print k, met_row[k]
 		metrics.append(met_row)
 				
-#		 skel = seg
-#		  
-#		 sz = 2 ** 6
-#		 ctr = (fung - surf) * (skel > 0)
-#			 
+# 		 skel = seg
+# 		  
+# 		 sz = 2 ** 6
+# 		 ctr = (fung - surf) * (skel > 0)
+# 			 
 # #		 ctr = -ctr
-#		 ctr = ndimage.uniform_filter(ctr, 2 * sz + 1, mode='constant', cval=ctr.max())
-#	 
-#		 ctr = ctr.argmin()
-#		 ctr = np.unravel_index(ctr, surf.shape)
-#		 slc = np.s_[ctr[0] - sz:ctr[0] + sz + 1, ctr[1] - sz: ctr[1] + sz + 1]
+# 		 ctr = ndimage.uniform_filter(ctr, 2 * sz + 1, mode='constant', cval=ctr.max())
+# 	 
+# 		 ctr = ctr.argmin()
+# 		 ctr = np.unravel_index(ctr, surf.shape)
+# 		 slc = np.s_[ctr[0] - sz:ctr[0] + sz + 1, ctr[1] - sz: ctr[1] + sz + 1]
 # 
 # #		 slc = (slice(899, 1028, None), slice(1439, 1568, None))
 # #		 slc = np.s_[...]
 # 
-#		 print slc
-#		 
-#		 plt.close('all')
-#		  
-#		 plt.figure()
-#		 plt.imshow(host[slc], 'gray', interpolation='nearest')
-#	
-#		 plt.figure()
-#		 plt.imshow(fung[slc], 'gray', interpolation='nearest')
-#	
-#		 plt.figure()
-#		 plt.imshow(surf[slc], 'gray', interpolation='nearest')
-#	
-#		 plt.figure()
-#		 plt.imshow(skel[slc], 'gray', interpolation='nearest')
+# 		 print slc
+# 		 
+# 		 plt.close('all')
+# 		  
+# 		 plt.figure()
+# 		 plt.imshow(host[slc], 'gray', interpolation='nearest')
+# 	
+# 		 plt.figure()
+# 		 plt.imshow(fung[slc], 'gray', interpolation='nearest')
+# 	
+# 		 plt.figure()
+# 		 plt.imshow(surf[slc], 'gray', interpolation='nearest')
+# 	
+# 		 plt.figure()
+# 		 plt.imshow(skel[slc], 'gray', interpolation='nearest')
 #   
 # #		 plt.figure()
 # #		 plt.imshow(((fung - surf) * (skel > 0))[slc], 'gray', interpolation='nearest')
-#		   
-#		 plt.figure()
-#		 plt.hist((fung - surf)[slc][skel[slc] > 0], bins=100)
-#		   
-#		 plt.figure()
-#		 plt.imshow((surf * (skel == 0) + fung * (skel > 0))[slc], 'gray', interpolation='nearest')
-#		  
-#		 plt.figure()
-#		 ax = plt.subplot(111, projection='3d')
+# 		   
+# 		 plt.figure()
+# 		 plt.hist((fung - surf)[slc][skel[slc] > 0], bins=100)
+# 		   
+# 		 plt.figure()
+# 		 plt.imshow((surf * (skel == 0) + fung * (skel > 0))[slc], 'gray', interpolation='nearest')
+# 		  
+# 		 plt.figure()
+# 		 ax = plt.subplot(111, projection='3d')
 #  
-#		 ys, xs = np.indices(skel.shape)
-#		 zs = fung		 
-#		 zs, ys, xs = (v[slc][skel[slc] > 0] for v in (zs, ys, xs))
-#		 ax.scatter((xs * 2.6240291219148313).astype(np.float32),
-#					(ys * 2.6240291219148313).astype(np.float32),
-#					(zs * -1.2).astype(np.float32), c='m',)  # marker='.')
-#			  
-#		 ys, xs = np.indices(surf.shape)
-#		 zs = surf		 
-#		 zs, ys, xs = (v[slc][skel[slc] == 0] for v in (zs, ys, xs))
-#		 ax.scatter((xs * 2.6240291219148313).astype(np.float32),
-#					(ys * 2.6240291219148313).astype(np.float32),
-#					(zs * -1.2).astype(np.float32), c='g',)  # marker='.')
-#		  
-#		 plt.show()
-#		 continue
+# 		 ys, xs = np.indices(skel.shape)
+# 		 zs = fung		 
+# 		 zs, ys, xs = (v[slc][skel[slc] > 0] for v in (zs, ys, xs))
+# 		 ax.scatter((xs * 2.6240291219148313).astype(np.float32),
+# 					(ys * 2.6240291219148313).astype(np.float32),
+# 					(zs * -1.2).astype(np.float32), c='m',)  # marker='.')
+# 			  
+# 		 ys, xs = np.indices(surf.shape)
+# 		 zs = surf		 
+# 		 zs, ys, xs = (v[slc][skel[slc] == 0] for v in (zs, ys, xs))
+# 		 ax.scatter((xs * 2.6240291219148313).astype(np.float32),
+# 					(ys * 2.6240291219148313).astype(np.float32),
+# 					(zs * -1.2).astype(np.float32), c='g',)  # marker='.')
+# 		  
+# 		 plt.show()
+# 		 continue
 	
 	print (metrics)
 	with open('metrics.csv', 'w') as csvfile:
 		fieldnames = ['experiment', 'disease', 'plate', 'well_row', 'well_col', 'timestamp', \
 					  'host', 'segmentation', \
 					  'width_mean', 'width_median', 'width_variance', 'width_skewness', 'width_kurtosis', \
-#					   'depth_mean', 'depth_median', 'depth_variance', 'depth_skewness', 'depth_kurtosis', \
+# 					   'depth_mean', 'depth_median', 'depth_variance', 'depth_skewness', 'depth_kurtosis', \
 					  'leaf', 'edge', 'node']
 		writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 		writer.writeheader()
@@ -587,23 +575,23 @@ def pipeline(experiment):
 # #		 plt.imshow(dist)
 # #		 plt.colorbar()
 # #		 plt.title('Micrometer Width of Hyphae')
-#		   
+# 		   
 # #		 jet = (dist.astype(float) - dist.min()) / dist.ptp()
 # #		 jet = ndimage.grey_dilation(jet, 2 ** 3 + 1, mode='constant')
 # #		 cmap = plt.get_cmap('gray')
 # #		 jet = cmap(jet)
 # #		 spmisc.imsave('width_heat.png', jet)
-#		   
-#		   
+# 		   
+# 		   
 # #		 return plt.show()
-#			  
-#		 cache_fname = utils.file_cache(os.path.join(pth, fname), '/tmp/drmaize')
-#		 im = utils.get_tif(cache_fname)		
-#		 skel_depth = im.argmax(0)
-#		 
+# 			  
+# 		 cache_fname = utils.file_cache(os.path.join(pth, fname), '/tmp/drmaize')
+# 		 im = utils.get_tif(cache_fname)		
+# 		 skel_depth = im.argmax(0)
+# 		 
 # #		 
-#		 cache_fname = utils.file_cache(os.path.join(pth, fname[:-12] + 'l001.ome.tif'), '/tmp/drmaize')
-#		 im = utils.get_tif(cache_fname)
+# 		 cache_fname = utils.file_cache(os.path.join(pth, fname[:-12] + 'l001.ome.tif'), '/tmp/drmaize')
+# 		 im = utils.get_tif(cache_fname)
 # # #		  
 # #		 sz = max(np.divide(im.shape, 10.))
 # #		 sz = np.arange(0, np.ceil(np.log2(sz)) + 1)
@@ -618,25 +606,25 @@ def pipeline(experiment):
 # 
 # #		 surf = '/home/rhein/mnt/drmaize/image_data/013SLB/microimages/reconstructed/LeafSurfaceImage/exp013SLBp03wC31505041720_surfloc.txt'
 # #		 surf_depth = np.loadtxt(surf, float, delimiter=",")
-#		 
-#		 surf_depth = im.argmax(0)
-#		 
-#		 depth = (skel_depth - surf_depth)
-#		 
-#		 plt.figure()
-#		 plt.hist((1.2 * depth[data['skel'] != 0]).flat, bins=100, normed=True)
-#		 plt.xlabel('micrometer depth below leaf surface')
-#		 plt.ylabel('proportion of hyphae')
-#		 
-#		 depth = depth * (data['skel'] != 0)
-#		 depth = ndimage.grey_dilation(depth, 2 ** 1 + 1, mode='constant')
-#		 
-#		 plt.figure()
-#		 plt.imshow(1.2 * depth * (depth > 0))
-#		 plt.colorbar()
-#		 plt.title('Micrometer Depth of Hyphae')
+# 		 
+# 		 surf_depth = im.argmax(0)
+# 		 
+# 		 depth = (skel_depth - surf_depth)
+# 		 
+# 		 plt.figure()
+# 		 plt.hist((1.2 * depth[data['skel'] != 0]).flat, bins=100, normed=True)
+# 		 plt.xlabel('micrometer depth below leaf surface')
+# 		 plt.ylabel('proportion of hyphae')
+# 		 
+# 		 depth = depth * (data['skel'] != 0)
+# 		 depth = ndimage.grey_dilation(depth, 2 ** 1 + 1, mode='constant')
+# 		 
+# 		 plt.figure()
+# 		 plt.imshow(1.2 * depth * (depth > 0))
+# 		 plt.colorbar()
+# 		 plt.title('Micrometer Depth of Hyphae')
 # 
-#				 
+# 				 
 # #		 plt.figure()
 # #		 plt.subplot(131), plt.imshow(skel_depth, 'gray')
 # #		 plt.subplot(132), plt.imshow(surf_depth, 'gray')
@@ -653,8 +641,8 @@ def pipeline(experiment):
 # #		 cmap = plt.get_cmap('jet')
 # #		 jet = cmap(jet)
 # #		 spmisc.imsave('depth_heat.png', jet)
-#		 
-#		 return plt.show()
+# 		 
+# 		 return plt.show()
 	
 	
 def surf_map(input, output, size):
@@ -667,7 +655,7 @@ def prune_leaves(cand_leaf, cand_node, v):
 	l = cand_leaf[l, 1:3]
 	n = cand_node[:, 0] == v
 	n, s = cand_node[n, 1:3], cand_node[n, 3]
-	d = sp.spatial.distance.cdist(l, n)
+	d = spatial.distance.cdist(l, n)
 	d = d.min(1)
 	s = s.max()
 	return l[d < s]
