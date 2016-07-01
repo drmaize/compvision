@@ -425,15 +425,14 @@ def pipeline(experiment):
 		
 		met_row['leaf'] = np.count_nonzero(leaf)
 		met_row['edge'] = np.count_nonzero(edge)
-		met_row['node'] = np.count_nonzero(node)
-	
+		met_row['node'] = np.count_nonzero(node)	
 			
-# 		 fname = os.path.join(pth, fname)
-# 		 head, tail = os.path.split(fname)
-# 		 tail = tail.replace('rf001.ome.tif', '_topsurface_optimized1.txt')
-# 		 surf = os.path.join(head, 'surfacemap', tail)
-# 		 cache_fname = utils.file_cache(surf, '/tmp/drmaize')
-# 		 surf = np.loadtxt(cache_fname, np.float32, delimiter=',')
+		fname = os.path.join(pth, fname)
+		head, tail = os.path.split(fname)
+		tail = tail.replace('rf001.ome.tif', '_topsurface_optimized1.txt')
+		surf = os.path.join(head, 'surfacemap', tail)
+		cache_fname = utils.file_cache(surf, '/tmp/drmaize')
+		surf = np.loadtxt(cache_fname, np.float32, delimiter=',')
 # 
 # 		 fname = os.path.join(pth, fname)
 # 		 tif = fname.replace('rf', 'rl')
@@ -463,9 +462,9 @@ def pipeline(experiment):
 # #		 
 # #		 return plt.show()
 # 		 
-# 		 cache_fname = utils.file_cache(fname, '/tmp/drmaize')
-# 		 fung = utils.get_tif(cache_fname)
-# 		 fung = np.argmax(fung, 0)
+		cache_fname = utils.file_cache(fname, '/tmp/drmaize')
+		fung = utils.get_tif(cache_fname)
+		fung = np.argmax(fung, 0)
 # 		 
 # 		 tail1 = tail.replace('_topsurface_optimized1.txt', '_hyphsurface_skel.txt')
 # 		 np.savetxt(os.path.join(head, 'surfacemap', tail1), fung * (skel > 0), delimiter=',')
@@ -475,15 +474,15 @@ def pipeline(experiment):
 # 		 np.savetxt(os.path.join(head, 'surfacemap', tail2), fung * (seg > 0), delimiter=',')
 # 		 print os.path.join(head, 'surfacemap', tail2)
 # 		 
-# 		 fung = fung.astype(np.float32)
-# 		 dpth = (fung - surf)
-# 		 dpth *= 1.2
+		fung = fung.astype(np.float32)
+		dpth = (fung - surf)
+		dpth *= 1.2
 # 		 
-# 		 met_row['depth_mean'] = np.mean(dpth[skel > 0].flat)
-# 		 met_row['depth_median'] = np.median(dpth[skel > 0].flat)
-# 		 met_row['depth_variance'] = np.var(dpth[skel > 0].flat)
-# 		 met_row['depth_skewness'] = spstat.skew(dpth[skel > 0].flat)
-# 		 met_row['depth_kurtosis'] = spstat.kurtosis(dpth[skel > 0].flat)
+		met_row['depth_mean'] = np.mean(dpth[skel > 0].flat)
+		met_row['depth_median'] = np.median(dpth[skel > 0].flat)
+		met_row['depth_variance'] = np.var(dpth[skel > 0].flat)
+		met_row['depth_skewness'] = stats.skew(dpth[skel > 0].flat)
+		met_row['depth_kurtosis'] = stats.kurtosis(dpth[skel > 0].flat)
 # 		 
 # 		 for k in (met_row):
 # 			 print k, met_row[k]
@@ -554,7 +553,7 @@ def pipeline(experiment):
 		fieldnames = ['experiment', 'disease', 'plate', 'well_row', 'well_col', 'timestamp', \
 					  'host', 'segmentation', \
 					  'width_mean', 'width_median', 'width_variance', 'width_skewness', 'width_kurtosis', \
-# 					   'depth_mean', 'depth_median', 'depth_variance', 'depth_skewness', 'depth_kurtosis', \
+ 					  'depth_mean', 'depth_median', 'depth_variance', 'depth_skewness', 'depth_kurtosis', \
 					  'leaf', 'edge', 'node']
 		writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 		writer.writeheader()
