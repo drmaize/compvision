@@ -22,16 +22,35 @@ import utils
 from collections import OrderedDict
 import csv
 
-#############
-# # Globals ##
-#############
-
-# results_path = 'results/segmentationfungus'
-results_path = 'wtreible_results/segmentationfungus'
+# It is important to protect the main loop of code to avoid recursive spawning 
+# of subprocesses when using joblib.Parallel. In other words, you should be 
+# writing code like this:
+# import ....
+# 
+# def function1(...):
+#     ...
+# 
+# def function2(...):
+#     ...
+# 
+# ...
+# if __name__ == '__main__':
+#     # do stuff with imports and functions defined about
+#     ...
+# No code should run outside of the “if __name__ == ‘__main__’” blocks, only imports and definitions.
+#
+# TODO investigate how this applies to dosctrings
 
 ###########
 # # Begin ##
 ###########
+
+"""
+These helper methods return context managers that map ndarrays onto files in 
+ramdisks.  Because cleanup of the mapped file occurs when the context 
+manager exits, accessing the ndarray after this point results in undefined 
+behavior.  Their definitions are similar to their numpy counterparts.
+"""
 
 @contextlib.contextmanager
 def empty(shape, dtype):
@@ -64,49 +83,67 @@ def ones(shape, dtype):
 def fromarray(a):
 	return full(a.shape, a, a.dtype)
 
-
-
-
-def hyst(lo, hi, structure=None):
+"""
+Multi-modal hysteresis which returns connected components from the binary mask 
+lo that also contain a value in the binary mask hi
+"""
+def hysteresis(lo, hi, structure=None):
+	# extract labels of connected components from lo that are also True in hi
 	labels = ndimage.label(lo, structure=structure)
 	labs = np.unique(labels[0][hi])
 	labs = labs[labs > 0]
 	
-# 	 msk = np.zeros(labels[0].shape, bool)	
+	# combine extracted labels into a single mask
 	labels = np.array(labels[0])		
 	with zeros(labels.shape, bool) as msk:	
-		joblib.Parallel(n_jobs=-1,)(joblib.delayed(utils.set_msk)(msk, labels, l) for l in labs)		
+		joblib.Parallel(n_jobs=-1)(joblib.delayed(utils.set_msk)(msk, labels, l) for l in labs)		
 		msk = np.copy(msk)
 	
 	return msk
 
-
-def hesseig(im, res, sz, nstds, orthstep, nrm=None):
+"""
+Computes the eigenvalues of the hessian matrix of im.
+im - input image
+res - resolution of each dimension of im
+sz - size in pixels of the filters used to compute derivatives
+nstds - number of standard deviations used to estimate gaussian filter
+orthstep - factor to expand derivative in orthogonal directions (as in sobel derivatives)
+nrm - list of normalization factors for each derivative kernel used for computing gaussian normalized derivatives
+"""
+def hessian_eigenvalues(im, res, sz, nstds, orthstep, nrm=None):
+	# compute and normalize approproately sized second order ghaussian derivative kernels
+	# https://en.wikipedia.org/wiki/Scale_space#Scale_selection 
 	d2dx2 = get_hessian_kernels(res, sz, nstds, orthstep)
 	if nrm is not None:
 		d2dx2 = list(d2dx2[i] / np.abs(d2dx2[i]).sum() * nrm[i] for i in range(len(d2dx2)))
 
+	# pad image with values at edge such that the kernel doesn't require zero 
+	# padding to compute values for the original image.  fftconvolve only 
+	# performs zero padding, so padding with edge values like so is a workaround for this
+	# https://en.wikipedia.org/wiki/Neumann_boundary_condition
 	pad = tuple((p, p) for p in np.max(list(k.shape for k in d2dx2), 0) / 2)
 	im_pad = np.pad(im, pad, 'edge').astype(float)
-
-# 	 retval = np.zeros((len(d2dx2),) + im_pad.shape)
-	im_pad = np.array(im_pad)
 	
+	# convolve image with gaussian derivative kernels at selected scale using
+	# fft for faster convolution
 	with empty((len(d2dx2),) + im_pad.shape, float) as retval:
 		joblib.Parallel(n_jobs=-1,)(
 			joblib.delayed(utils.add_out_arg(signal.fftconvolve))(im_pad, k, 'same', out=retval[i])
 			for i, k in enumerate(d2dx2))
 		retval = np.copy(retval)
 	
+	# remove padded border and organize image into hessian matrix
 	d2dx2 = np.empty((len(res),) * 2 + im.shape)
 	for ind, (i, j) in enumerate(np.transpose(np.triu_indices(len(res)))):
 		d2dx2[i, j] = d2dx2[j, i] = utils.unpad(retval[ind], pad)
 
-	# eigen
+	# reshape image in preparation for eigen value computation such that first 
+	# and second dimensions are height and width, and the rest of the 
+	# dimensions represent a hessian matrix for the given pixel 
 	axes = range(len(res) + 2)
 	d2dx2 = np.transpose(d2dx2, axes[2:] + axes[:2])
 
-# 	 retval = np.zeros(d2dx2.shape[:-1])
+	# compute eigenvalues of each hessian matrix
 	with empty(d2dx2.shape[:-1], float) as retval:
 		joblib.Parallel(n_jobs=-1,)(
 			joblib.delayed(utils.add_out_arg(np.linalg.eigvalsh))(d2dx2[i], out=retval[i])
@@ -115,7 +152,12 @@ def hesseig(im, res, sz, nstds, orthstep, nrm=None):
 
 	return retval
 
-
+"""
+resolution - resolution of each dimension of im
+size - size in pixels of the filters used to compute derivatives
+num_stds - number of standard deviations used to estimate gaussian filter
+ortho_step_size - factor to expand derivative in orthogonal directions (as in sobel derivatives)
+"""
 def get_hessian_kernels(resolution, size, num_stds, ortho_step_size):
 	assert np.all(np.asarray(size) > 1.)
 	dd = []
@@ -133,16 +175,18 @@ def get_hessian_kernels(resolution, size, num_stds, ortho_step_size):
 		dd.append(k)
 	return dd
 
-
-def scanal(pth, npz_name, im, immsk, sizes, nstds, orthstep, res):
-	print 'scanal'
+"""
+extract the cornerness and lineness images by combining the cornerness and lineness images at different scales 
+"""
+def scale_analysis(pth, npz_name, im, immsk, sizes, nstds, orthstep, res):
+	print 'scale_analysis'
 	data = {}
 
 	nrm = list(np.abs(n).sum() for n in get_hessian_kernels(res, 50., nstds, orthstep))
 	scspace = []
 	for sz in sizes:
 		print sz
-		d2dx2 = hesseig(im, res, sz, nstds, orthstep, nrm)
+		d2dx2 = hessian_eigenvalues(im, res, sz, nstds, orthstep, nrm)
 		d2dx2.sort(d2dx2.ndim - 1)
 		scspace.append(d2dx2.astype(np.float32))
 	scspace = np.concatenate([sc[None, ...] for sc in scspace], 0)
@@ -172,6 +216,9 @@ def scanal(pth, npz_name, im, immsk, sizes, nstds, orthstep, res):
 	print npz_cache
 
 
+"""
+segment the hyphae using multi-modal hysteresis of the cornerness and linesness images
+"""
 def segment(pth, fname, npz_name, exp_re, immsk):
 	print "segment"
 	data = {}
@@ -204,7 +251,7 @@ def segment(pth, fname, npz_name, exp_re, immsk):
 
 	crn = (crn > cmsk[0])  # | (lne > cmsk[1])
 	lne = (lne > lmsk)
-	seg = hyst(lne, crn, np.ones((3, 3), bool))
+	seg = hysteresis(lne, crn, np.ones((3, 3), bool))
 	seg[~immsk] = 0
 	
 	data['seg'] = seg
@@ -220,8 +267,11 @@ def segment(pth, fname, npz_name, exp_re, immsk):
 	print npz_cache	
 
 
-def skeleton(pth, npz_name, immsk):
-	print 'skeleton'
+"""
+skeletonize the segmented hyphae
+"""
+def skeletonize(pth, npz_name, immsk):
+	print 'skeletonize'
 	data = {}
 
 	npz_cache = utils.file_cache(os.path.join(pth, results_path, npz_name), '/tmp/drmaize/')
@@ -297,6 +347,9 @@ def skeleton(pth, npz_name, immsk):
 	print npz_cache
 
 
+"""
+pipeline for segmenting, skeletonizing, depth estimation, and metric computation of an experiment
+"""
 def pipeline(experiment):
 	# TODO extract function for selecting filenames
 	
@@ -306,7 +359,7 @@ def pipeline(experiment):
  
 	exp_re = 'e(\d{3})(SLB|NLB)p(\d{2})w([A-D])([1-6])x20_(\d*)rf001\.ome\.tif'
 	# data_dir = '/home/rhein/mnt/drmaize/image_data/'  
-    data_dir = '/mnt/data27/wisser/drmaize/image_data'
+	data_dir = '/mnt/data27/wisser/drmaize/image_data'
 	sub_dir = 'microimages/reconstructed/HS'
 	
 	
@@ -390,9 +443,9 @@ def pipeline(experiment):
 		# TODO insert mask into cache file
 		immsk = im > 4
 
-		scanal(pth, npz_name, im, immsk, sizes, nstds, orthstep, res)
+		scale_analysis(pth, npz_name, im, immsk, sizes, nstds, orthstep, res)
 		segment(pth, fname, npz_name, exp_re, immsk)
-		skeleton(pth, npz_name, immsk)
+		skeletonize(pth, npz_name, immsk)
 		
 		npz_cache = utils.file_cache(os.path.join(pth, results_path, npz_name), '/tmp/drmaize/')
 		with np.load(npz_cache, 'r') as data:
@@ -433,47 +486,11 @@ def pipeline(experiment):
 		surf = os.path.join(head, 'surfacemap', tail)
 		cache_fname = utils.file_cache(surf, '/tmp/drmaize')
 		surf = np.loadtxt(cache_fname, np.float32, delimiter=',')
-# 
-# 		 fname = os.path.join(pth, fname)
-# 		 tif = fname.replace('rf', 'rl')
-# 		 cache_fname = utils.file_cache(tif, '/tmp/drmaize')
-# 		 host = utils.get_tif(cache_fname)		
-# #		 surf = np.argmax(host, 0).astype(np.float32)
-# 		 host = host.argmax(0)	  
-# # #		 
-# # #		 mn, mx = 0.0, 149.0  # surf.min(), surf.max()
-# # #		 print mn, mx
-# # # 
-# # #		 surf[0, 0] = mn
-# # #		 surf[-1, -1] = mx
-# # #				 
-# # #		 plt.close('all')
-# # # 
-# # #		 plt.figure()
-# # #		 plt.imshow(surf, 'gray', interpolation='nearest')
-# # #		 
-# #		 surf = ndimage.gaussian_filter(surf, 5, mode='nearest') 
-# #		 
-# #		 surf[0, 0] = mn
-# #		 surf[-1, -1] = mx
-# #				 
-# #		 plt.figure()
-# #		 plt.imshow(surf, 'gray', interpolation='nearest')
-# #		 
-# #		 return plt.show()
-# 		 
+
 		cache_fname = utils.file_cache(fname, '/tmp/drmaize')
 		fung = utils.get_tif(cache_fname)
 		fung = np.argmax(fung, 0)
-# 		 
-# 		 tail1 = tail.replace('_topsurface_optimized1.txt', '_hyphsurface_skel.txt')
-# 		 np.savetxt(os.path.join(head, 'surfacemap', tail1), fung * (skel > 0), delimiter=',')
-# 		 print os.path.join(head, 'surfacemap', tail1)
-# 		 
-# 		 tail2 = tail.replace('_topsurface_optimized1.txt', '_hyphsurface_seg.txt')
-# 		 np.savetxt(os.path.join(head, 'surfacemap', tail2), fung * (seg > 0), delimiter=',')
-# 		 print os.path.join(head, 'surfacemap', tail2)
-# 		 
+
 		fung = fung.astype(np.float32)
 		dpth = (fung - surf)
 		dpth *= 1.2
@@ -483,71 +500,9 @@ def pipeline(experiment):
 		met_row['depth_variance'] = np.var(dpth[skel > 0].flat)
 		met_row['depth_skewness'] = stats.skew(dpth[skel > 0].flat)
 		met_row['depth_kurtosis'] = stats.kurtosis(dpth[skel > 0].flat)
-# 		 
-# 		 for k in (met_row):
-# 			 print k, met_row[k]
+
 		metrics.append(met_row)
-				
-# 		 skel = seg
-# 		  
-# 		 sz = 2 ** 6
-# 		 ctr = (fung - surf) * (skel > 0)
-# 			 
-# #		 ctr = -ctr
-# 		 ctr = ndimage.uniform_filter(ctr, 2 * sz + 1, mode='constant', cval=ctr.max())
-# 	 
-# 		 ctr = ctr.argmin()
-# 		 ctr = np.unravel_index(ctr, surf.shape)
-# 		 slc = np.s_[ctr[0] - sz:ctr[0] + sz + 1, ctr[1] - sz: ctr[1] + sz + 1]
-# 
-# #		 slc = (slice(899, 1028, None), slice(1439, 1568, None))
-# #		 slc = np.s_[...]
-# 
-# 		 print slc
-# 		 
-# 		 plt.close('all')
-# 		  
-# 		 plt.figure()
-# 		 plt.imshow(host[slc], 'gray', interpolation='nearest')
-# 	
-# 		 plt.figure()
-# 		 plt.imshow(fung[slc], 'gray', interpolation='nearest')
-# 	
-# 		 plt.figure()
-# 		 plt.imshow(surf[slc], 'gray', interpolation='nearest')
-# 	
-# 		 plt.figure()
-# 		 plt.imshow(skel[slc], 'gray', interpolation='nearest')
-#   
-# #		 plt.figure()
-# #		 plt.imshow(((fung - surf) * (skel > 0))[slc], 'gray', interpolation='nearest')
-# 		   
-# 		 plt.figure()
-# 		 plt.hist((fung - surf)[slc][skel[slc] > 0], bins=100)
-# 		   
-# 		 plt.figure()
-# 		 plt.imshow((surf * (skel == 0) + fung * (skel > 0))[slc], 'gray', interpolation='nearest')
-# 		  
-# 		 plt.figure()
-# 		 ax = plt.subplot(111, projection='3d')
-#  
-# 		 ys, xs = np.indices(skel.shape)
-# 		 zs = fung		 
-# 		 zs, ys, xs = (v[slc][skel[slc] > 0] for v in (zs, ys, xs))
-# 		 ax.scatter((xs * 2.6240291219148313).astype(np.float32),
-# 					(ys * 2.6240291219148313).astype(np.float32),
-# 					(zs * -1.2).astype(np.float32), c='m',)  # marker='.')
-# 			  
-# 		 ys, xs = np.indices(surf.shape)
-# 		 zs = surf		 
-# 		 zs, ys, xs = (v[slc][skel[slc] == 0] for v in (zs, ys, xs))
-# 		 ax.scatter((xs * 2.6240291219148313).astype(np.float32),
-# 					(ys * 2.6240291219148313).astype(np.float32),
-# 					(zs * -1.2).astype(np.float32), c='g',)  # marker='.')
-# 		  
-# 		 plt.show()
-# 		 continue
-	
+					
 	print (metrics)
 	with open('metrics.csv', 'w') as csvfile:
 		fieldnames = ['experiment', 'disease', 'plate', 'well_row', 'well_col', 'timestamp', \
@@ -557,91 +512,7 @@ def pipeline(experiment):
 					  'leaf', 'edge', 'node']
 		writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 		writer.writeheader()
-		writer.writerows(metrics)
-			
-# #		 _, dist = skmorph.medial_axis(data['seg'], return_distance=True)
-# #		 dist *= data['skel'] != 0
-# #		 dist *= 2 * 2.6240291219148313
-# #		   
-# #		 plt.figure()
-# #		 plt.hist(dist[dist > 0], normed=True)
-# #		 plt.xlabel('micrometer width of hyphae')
-# #		 plt.ylabel('proportion of hyphae')
-# #		 
-# #		 dist = ndimage.grey_dilation(dist, 2 ** 1 + 1, mode='constant')
-# #		   
-# #		 plt.figure()
-# #		 plt.imshow(dist)
-# #		 plt.colorbar()
-# #		 plt.title('Micrometer Width of Hyphae')
-# 		   
-# #		 jet = (dist.astype(float) - dist.min()) / dist.ptp()
-# #		 jet = ndimage.grey_dilation(jet, 2 ** 3 + 1, mode='constant')
-# #		 cmap = plt.get_cmap('gray')
-# #		 jet = cmap(jet)
-# #		 spmisc.imsave('width_heat.png', jet)
-# 		   
-# 		   
-# #		 return plt.show()
-# 			  
-# 		 cache_fname = utils.file_cache(os.path.join(pth, fname), '/tmp/drmaize')
-# 		 im = utils.get_tif(cache_fname)		
-# 		 skel_depth = im.argmax(0)
-# 		 
-# #		 
-# 		 cache_fname = utils.file_cache(os.path.join(pth, fname[:-12] + 'l001.ome.tif'), '/tmp/drmaize')
-# 		 im = utils.get_tif(cache_fname)
-# # #		  
-# #		 sz = max(np.divide(im.shape, 10.))
-# #		 sz = np.arange(0, np.ceil(np.log2(sz)) + 1)
-# #		 fil = np.empty((len(sz),) + im.shape[1:])
-# #			
-# #		 with shared_arrays(im, fil) as shm:
-# #			 Parallel()(joblib.delayed(surf_map)(shm.im, shm.fil[i - sz[0]], 2 * 2 ** i + 1) for i in sz)
-# #		   
-# #		 w = 2. ** np.array(sz)
-# #		 w /= w.sum()
-# #		 surf_depth = (fil * w[..., None, None]).sum(0)
-# 
-# #		 surf = '/home/rhein/mnt/drmaize/image_data/013SLB/microimages/reconstructed/LeafSurfaceImage/exp013SLBp03wC31505041720_surfloc.txt'
-# #		 surf_depth = np.loadtxt(surf, float, delimiter=",")
-# 		 
-# 		 surf_depth = im.argmax(0)
-# 		 
-# 		 depth = (skel_depth - surf_depth)
-# 		 
-# 		 plt.figure()
-# 		 plt.hist((1.2 * depth[data['skel'] != 0]).flat, bins=100, normed=True)
-# 		 plt.xlabel('micrometer depth below leaf surface')
-# 		 plt.ylabel('proportion of hyphae')
-# 		 
-# 		 depth = depth * (data['skel'] != 0)
-# 		 depth = ndimage.grey_dilation(depth, 2 ** 1 + 1, mode='constant')
-# 		 
-# 		 plt.figure()
-# 		 plt.imshow(1.2 * depth * (depth > 0))
-# 		 plt.colorbar()
-# 		 plt.title('Micrometer Depth of Hyphae')
-# 
-# 				 
-# #		 plt.figure()
-# #		 plt.subplot(131), plt.imshow(skel_depth, 'gray')
-# #		 plt.subplot(132), plt.imshow(surf_depth, 'gray')
-# #		 plt.subplot(133), plt.imshow(depth, 'gray')
-# #		 
-# #		 plt.figure()
-# #		 plt.subplot(131), plt.imshow(((1 + skel_depth) * (data['skel'] != 0))[slc])  # , 'gray')
-# #		 plt.subplot(132), plt.imshow(((1 + surf_depth) * (data['skel'] != 0))[slc])  # , 'gray')
-# #		 plt.subplot(133), plt.imshow(((1 + depth) * (depth > 0) * (data['skel'] != 0))[slc])  # , 'gray')
-# 
-# #		 jet = (1 + depth) * (depth > 0) * (data['skel'] != 0)
-# #		 jet = ndimage.grey_dilation(jet, 2 ** 3 + 1, mode='constant')
-# #		 jet = (jet.astype(float) - jet.min()) / jet.ptp()
-# #		 cmap = plt.get_cmap('jet')
-# #		 jet = cmap(jet)
-# #		 spmisc.imsave('depth_heat.png', jet)
-# 		 
-# 		 return plt.show()
+		writer.writerows(metrics)			
 	
 	
 def surf_map(input, output, size):
@@ -667,6 +538,13 @@ if __name__ == '__main__':
 	if len(sys.argv) < 2:
 		print "Usage: python SegmentHyphae.py <experiment>"
 	else:
+		#############
+		# # Globals ##
+		#############
+		
+		# results_path = 'results/segmentationfungus'
+		results_path = 'wtreible_results/segmentationfungus'
+
 		arg_names = ['script_name', 'experiment']
 		args = dict(zip(arg_names, sys.argv))
 		Arg_list = collections.namedtuple('Arg_list', arg_names)
