@@ -104,10 +104,10 @@ def hysteresis(lo, hi, structure=None):
 """
 Computes the eigenvalues of the hessian matrix of im.
 im - input image
-res - resolution of each dimension of im
+res - list of resolution of each dimension of im
 sz - size in pixels of the filters used to compute derivatives
 nstds - number of standard deviations used to estimate gaussian filter
-orthstep - factor to expand derivative in orthogonal directions (as in sobel derivatives)
+orthstep - additive factor to expand derivative in orthogonal directions (as in sobel derivatives)
 nrm - list of normalization factors for each derivative kernel used for computing gaussian normalized derivatives
 """
 def hessian_eigenvalues(im, res, sz, nstds, orthstep, nrm=None):
@@ -139,7 +139,7 @@ def hessian_eigenvalues(im, res, sz, nstds, orthstep, nrm=None):
 
 	# reshape image in preparation for eigen value computation such that first 
 	# and second dimensions are height and width, and the rest of the 
-	# dimensions represent a hessian matrix for the given pixel 
+	# dimensions represent a hessian matrix at each pixel
 	axes = range(len(res) + 2)
 	d2dx2 = np.transpose(d2dx2, axes[2:] + axes[:2])
 
@@ -182,17 +182,20 @@ def scale_analysis(pth, npz_name, im, immsk, sizes, nstds, orthstep, res):
 	print 'scale_analysis'
 	data = {}
 
+	# compute scale factors as the L1 norm of large second order kernels
 	nrm = list(np.abs(n).sum() for n in get_hessian_kernels(res, 50., nstds, orthstep))
+	
 	scspace = []
 	for sz in sizes:
 		print sz
 		d2dx2 = hessian_eigenvalues(im, res, sz, nstds, orthstep, nrm)
-		d2dx2.sort(d2dx2.ndim - 1)
+		d2dx2.sort(d2dx2.ndim - 1)  # sort eigenvalues into min/max or corner/line order
 		scspace.append(d2dx2.astype(np.float32))
 	scspace = np.concatenate([sc[None, ...] for sc in scspace], 0)
-	scspace *= -1
+	scspace *= -1 
 	scspace[scspace < 1e-6] = 0
 	scspace[..., ~immsk, :] = 0
+	# combine scale space results using geometric mean
 	scspace = (scipy.stats.gmean(1 + scspace, 0) - 1) ** .5
 
 	lne, crn = scspace[..., 0], scspace[..., 1]
@@ -278,23 +281,29 @@ def skeletonize(pth, npz_name, immsk):
 	with np.load(npz_cache, 'r') as old_data:
 		seg = old_data['seg']
 
+	# base skeleton comes from medial axis of segmented hyphae but it requires pruning
 	skel, dist = morphology.medial_axis(seg, return_distance=True)
+	# label skeletal pixels as one of leaf, edge or node
 	node, edge, leaf = (ndimage.label(g, np.ones((3, 3), bool))[0] for g in utils.skel2graph(skel))
 
+	# determine which edges are candidates for pruning by finding edges adjacent to nodes
 	trim_edge = (edge != 0) & ~(morphology.binary_dilation(node != 0, np.ones((3, 3), bool)) != 0)
 	trim_edge = ndimage.label(trim_edge, np.ones((3, 3), bool))[0]
 
+	# determine edges which are candidates from pruning by finding those adjacent to leaves
 	leaf_edge_vals = morphology.binary_dilation(leaf != 0, np.ones((3, 3), bool)) != 0
 	leaf_edge_vals = np.unique(trim_edge[leaf_edge_vals])
 	leaf_edge_vals = leaf_edge_vals[leaf_edge_vals > 0]
-	leaf_edge = leaf != 0
+	leaf_edge = leaf != 0  # TODO is this correct when we are setting the appropriate pixels below?
 
-	trim_edge = np.array(trim_edge)
-	with fromarray(leaf_edge) as leaf_edge:
+	# determine which edges are adjacent to leaves and nodes
+	with fromarray(leaf_edge) as leaf_edge, fromarray(trim_edge) as trim_edge:
 		joblib.Parallel(n_jobs=-1)(
 			joblib.delayed(utils.set_msk)(leaf_edge, trim_edge, l) for l in leaf_edge_vals)
+		trim_edge = np.copy(trim_edge)
 		leaf_edge = np.copy(leaf_edge)
 		
+	# TODO what the heck is going on here
 	leaf_edge[(morphology.binary_dilation(leaf_edge, np.ones((3, 3), bool)) != 0) & (edge != 0)] = True
 	leaf_edge = ndimage.label(leaf_edge, np.ones((3, 3), bool))[0]
 
@@ -310,6 +319,7 @@ def skeletonize(pth, npz_name, immsk):
 	cand_leaf = cand_leaf.nonzero()
 	cand_leaf = np.transpose((leaf_edge_node[cand_leaf],) + cand_leaf)
 
+    # prune leaves and edges based on their distance from their adjacent node
 	if len(cand_node) > 0 and len(cand_leaf) > 0:
 		cand_leaf = np.array(cand_leaf)
 		cand_node = np.array(cand_node)
@@ -455,6 +465,7 @@ def pipeline(experiment):
 		skel, dist = morphology.medial_axis(seg, return_distance=True)
 		node, edge, leaf = (ndimage.label(g, np.ones((3, 3), bool))[0] for g in utils.skel2graph(skel))
 
+		# scale according to physical xy resolution
 		dist = dist * 2.6240291219148313
 		
 # 		 exp_re = 'exp(\d{3})(SLB|NLB)p(\d{2})w([A-D])([1-6])(\d*)rf002\.ome\.tif'
@@ -515,11 +526,8 @@ def pipeline(experiment):
 		writer.writerows(metrics)			
 	
 	
-def surf_map(input, output, size):
-	v = ndimage.uniform_filter(input, (1,) + (size,) * 2, mode='constant')
-	output[...] = v.argmax(0)
-
-
+# determine which leaves to prune when the distance from the leaf to the node 
+# is less than the scale of the node itself
 def prune_leaves(cand_leaf, cand_node, v):
 	l = cand_leaf[:, 0] == v
 	l = cand_leaf[l, 1:3]
