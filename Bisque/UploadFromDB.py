@@ -54,7 +54,6 @@ def main():
 					imageChannel = matches.group(2)
 					search_dict = {microImageSet_key_1 : reconstructedImage, microImageSet_key_2 : imageChannel}
 					row = dbh.search_col(microImageSet_table, search_dict)[0]
-
 					
 					# Setup metadata dictionary
 					metadata = {}

@@ -75,7 +75,7 @@ def hyst(lo, hi, structure=None):
 # 	 msk = np.zeros(labels[0].shape, bool)	
 	labels = np.array(labels[0])		
 	with zeros(labels.shape, bool) as msk:	
-		joblib.Parallel(n_jobs=-1,)(joblib.delayed(utils.set_msk)(msk, labels, l) for l in labs)		
+		joblib.Parallel(n_jobs=-1,)(joblib.delayed(utils.set_msk)(msk, labels, l) for l in labs)
 		msk = np.copy(msk)
 	
 	return msk
@@ -306,7 +306,7 @@ def pipeline(experiment):
  
 	exp_re = 'e(\d{3})(SLB|NLB)p(\d{2})w([A-D])([1-6])x20_(\d*)rf001\.ome\.tif'
 	# data_dir = '/home/rhein/mnt/drmaize/image_data/'  
-    data_dir = '/mnt/data27/wisser/drmaize/image_data'
+	data_dir = '/mnt/data27/wisser/drmaize/image_data'
 	sub_dir = 'microimages/reconstructed/HS'
 	
 	

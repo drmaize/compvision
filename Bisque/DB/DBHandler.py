@@ -3,11 +3,9 @@ import MySQLdb
 import os, logging, uuid, ConfigParser
 import numbers
 
-cf = "../.ConfigOptions"
-
 class DBHandler(object):
 
-	def __init__(self, config_file=cf, database=None, debug=False):
+	def __init__(self, config_file, database=None, debug=False):
 		config = ConfigParser.ConfigParser()
 		config.read(config_file)
 
@@ -33,8 +31,12 @@ class DBHandler(object):
 		return self.conn.cursor()
 		
 	def insert_into(self, table, values):
-		values = ','.join([ "{}".format(value) if isinstance( value,  numbers.Number ) else "'{}'".format(value) for value in values])
+	
+		values = ','.join([ "{}".format(value) if isinstance(value,  numbers.Number) or value.lower()=='null' else "'{}'".format(value) for value in values])
 		query = "INSERT into " + table + " VALUES (" + values + ");"
+		print query
+		
+		return
 		cursor = self._connect()
 		try:
 			cursor.execute(query)
@@ -90,6 +92,7 @@ class DBHandler(object):
 		@mode: '1' = anywhere in string ('%<search_term>%')
 			   '2' = prefix ('<search_term>%')
 			   '3' = suffix ('%<search_term>')
+			   '4' = exact ('<search_term>')
 		'''
 		
 		query = "SELECT * FROM " + table + " WHERE" 
@@ -103,6 +106,8 @@ class DBHandler(object):
 				search_str = search + "%"
 			elif mode == 3:
 				search_str = "%" + search
+			elif mode == 4:
+				search_str = search
 			query += ' ' + col + " LIKE \'" + search_str + "\'"
 			second = True;
 			
@@ -134,12 +139,14 @@ class DBHandler(object):
 		
 		
 if __name__ == "__main__":
-	dbh = DBHandler()
+	script_path = os.path.dirname(os.path.realpath(__file__))
+	config_path = os.path.join(script_path, "..", ".ConfigOptions")
+	dbh = DBHandler(config_file=config_path)
 	
 	for table in dbh.get_tables():
 		print "Table " + table + ":"
 		for col_name in dbh.get_columns(table):
 			print "\t" + col_name
 	
-	#srch = dbh.search_col("inventory", "sample", "013SLB")
-	#print srch
+	srch = dbh.search_col("inventory", {"sample":"013SLB"})
+	print srch
