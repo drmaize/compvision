@@ -30,7 +30,7 @@ def UploadToBisque():
 		# Setup metadata
 		metadata = {"dataset":dataset_name}
 		for tag, data in pairwise(inp_metadata):
-			metadata[str(tag)] = str(data)
+			metadata[str(tag)] = str(data.replace('\'',''))
 		
 		# Setup BisqueHandlers
 		script_path = os.path.dirname(os.path.realpath(__file__))
@@ -157,7 +157,13 @@ def UploadToBisque():
 			# If entry doesn't exist, attempt to add entry
 			print ">>> microImageSet entry doesn't exist... adding"
 			# NULL for autoincrement column, bisque URI, bisque text annos, and bisque gobjs
-			row_list = [microImageSet_id, reconstructedImage, imageChannel, 'NULL', 'NULL', 'NULL']
+			try:
+                        	print "Uploading File", image_file
+                        	retval = uh.upload_image(image_file, metadata=metadata)
+                        	uri = retval[1];
+                	except:
+                        	print ">>> Could not upload... trying again..."
+			row_list = [microImageSet_id, reconstructedImage, imageChannel, uri, 'NULL', 'NULL']
 			print row_list
 			dbh.insert_into(microImageSet_table, row_list)
 		
@@ -165,12 +171,6 @@ def UploadToBisque():
 		##################################################
 		## 5) Upload file and obtain retval (Bisque URI) #
 		##################################################
-		try:
-			print "Uploading File", image_file
-			#retval = uh.upload_image(image_file, metadata=metadata)
-			#uri = retval[1];
-		except:
-			print ">>> Could not upload... trying again..."
 
 if __name__ == "__main__":
 	requests.packages.urllib3.disable_warnings()
