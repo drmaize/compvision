@@ -34,9 +34,7 @@ class DBHandler(object):
 	
 		values = ','.join([ "{}".format(value) if isinstance(value,  numbers.Number) or value.lower()=='null' else "'{}'".format(value) for value in values])
 		query = "INSERT into " + table + " VALUES (" + values + ");"
-		print query
 		
-		return
 		cursor = self._connect()
 		try:
 			cursor.execute(query)

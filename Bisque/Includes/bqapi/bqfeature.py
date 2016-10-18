@@ -24,7 +24,8 @@ log = logging.getLogger('bqapi.bqfeature')
 try:
     import tables
 except ImportError:
-     warnings.warn("Pytables was not found! bqfeatures requires pytables!")
+	#     warnings.warn("Pytables was not found! bqfeatures requires pytables!")
+	pass
 
 #max requests attemps if the connection is drop when making parallel requests
 MAX_ATTEMPTS = 5

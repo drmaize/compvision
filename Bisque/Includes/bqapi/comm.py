@@ -528,17 +528,20 @@ class BQSession(object):
             xml = self.factory.to_string (xml)
 
         log.debug('postxml %s  content %s ' % (url, xml))
-
+		
         url = self.c.prepare_url(url, **params)
 
         try:
+			print "Begin Try..."
             r = None
             if not self.dryrun:
                 r = self.c.push(url, content=xml, method=method, path=path, headers={'Content-Type':'text/xml', 'Accept': 'text/xml' })
+				print r
             if path is not None:
                 return r
             return r and self.factory.string2etree(r)
         except etree.ParseError, e:
+			print "Problem with post response"
             log.exception("Problem with post response %s", e)
             return r
 

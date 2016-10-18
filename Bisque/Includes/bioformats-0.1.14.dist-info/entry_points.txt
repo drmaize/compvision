@@ -1,0 +1,3 @@
+[console_scripts]
+bioformats = bioformats.cli:bioformats
+

@@ -91,40 +91,76 @@ class ResourceManager(object):
 		xmlstr = '<tag name=\"' + name + '\" value=\"' + str(value) + '\"/>'
 		return self._postxml(uri,xmlstr)
 				
-	def _gob_xml(self, type, vertex_list, color, name):
+	def _gob_xml(self, type, vertex_list, color, name, width):
 		'''
 		Constructs a template gobject xml string
 		'''
 		xmlstr = '<gobject type=\"' + type + '\" '
 		if name:
-			xmlstr += 'name=\"' + name + ' '
+			xmlstr += 'name=\"' + name + '\" '
 		xmlstr += '>\n'
 		if color in colors:
-			xmlstr += '\t<tag value=\"' + colors[color] + '\" name=\"color\" />\n'
+			xmlstr += '<tag value=\"' + colors[color] + '\" name=\"color\" />\n'
+		elif color[0] == '#':
+			xmlstr += '\t<tag value=\"' + color.lower() + '\" name=\"color\" />\n'
 		for vertex in vertex_list:
 			x = vertex[0]
 			y = vertex[1]
-			xmlstr += '\t<vertex x=\"' + str(x) + '\" y=\"' + str(y) + '\" ' 
+			xmlstr += '<vertex x=\"' + str(x) + '\" y=\"' + str(y) + '\" ' 
 			if len(vertex) > 2:
 				z = vertex[2]
 				xmlstr += 'z=\"' + str(z) + '\" ' 
 			xmlstr += '/>\n'
+		if width:
+			xmlstr += "<tag value=\"" + str(width) + "\" name=\"line_width\" />\n"
 		xmlstr += "</gobject>"
 		return xmlstr
 		
-	def add_point(self, uri, coords, color="red", name=None):
+	def add_point(self, uri, coords, color="red", name=None, width=None):
 		'''
 		Adds a point annotation to a resource
 		'''
-		xmlpoint = self._gob_xml('point', [coords], color, name)
-		return self._postxml(uri,xmlpoint)
+		xmlpoint = self._gob_xml('point', [coords], color, name, width)
+		return self._postxml(uri,xmlpoint) 
+	
+	def add_points(self, uri, point_map):
+		'''
+		@point_map: {name : [x,y,z,color,linewidth]}
+		'''
+		print "Uploading all points..."
+		for name, data_lines in point_map.iteritems():
+			for data in data_lines:
+				self.add_point(uri, data[0:3], data[3], name, data[4])
 
+		print "Points Uploaded!"
+		
+	def add_circle(self, uri, center, radius, color="red", name=None, width=None):
+		'''
+		Adds a circle annotation to a resource
+		'''
+		coord_2 = [center[0], center[1]+radius] + center[2:]
+		xmlpoint = self._gob_xml('circle', [coords, coord_2], color, name, width)
+		return self._postxml(uri,xmlpoint) 
+	
+	def add_points(self, uri, point_map):
+		'''
+		@point_map: {name : [x,y,z,color,linewidth]}
+		'''
+		print "Uploading all circles..."
+		for name, data_lines in point_map.iteritems():
+			for data in data_lines:
+				self.add_point(uri, data[0:3], data[3], name, data[4])
+				#xmlstr += self._gob_xml('point', [data[0:3]], data[3], name, data[4])
+				#xmlstr += '\n'
+		print "Circles Uploaded!"
+		
+		
+	def delete_resource(self, uri):
+		local_session = self._authenticate()
+		return local_session.deletexml(uri)
 
 if __name__ == "__main__":
 
 	rm = ResourceManager(debug=True)
-	#rm.add_point('test', [1,2,3], color='blue')
 	uri='http://bisque.iplantcollaborative.org/data_service/00-QH3s9p6QdP3kixQzsAHToZ'
-	print rm.add_tag(uri,"Test","TestVal")
-	print rm.add_point(uri, [50,50], color='green')
 

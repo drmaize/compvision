@@ -109,7 +109,7 @@ class UploadHandler(object):
 
 		xmlet  = local_session.factory.string2etree (outxml)
 		if xmlet.tag == 'resource' and xmlet.get ('type') == 'uploaded':
-			self._debug_print('Successful upload of ' + filename)
+			self._debug_print('\nSuccessful upload of ' + filename)
 			image = local_session.factory.from_etree(xmlet[0])
 			return (image.name, image.uri)
 		else:
