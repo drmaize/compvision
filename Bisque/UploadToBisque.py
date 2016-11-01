@@ -93,6 +93,12 @@ def UploadToBisque():
 		metadata['reconstructedImage'] = reconstructedImage
 		metadata['imageChannel'] = imageChannel
 		
+		# Add in filesize
+		fileBytes = os.path.getsize(image_file)
+		fileSize = '{0:.3f}'.format(fileBytes/1024.0/1024.0)
+		fileSize += ' MB'
+		metadata['file_size'] = fileSize
+		
 		# Add in Bisque Data
 		metadata['bisqueURI'] = "NULL"
 		metadata['bisqueText'] = "NULL"
