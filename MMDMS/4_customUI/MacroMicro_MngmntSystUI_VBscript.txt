@@ -119,6 +119,9 @@ End Function
 Public Sub TileCaller(ByVal control As IRibbonControl)
 ThisWorkbook.Tile
 End Sub
+Public Sub TileUpdatedCaller(ByVal control As IRibbonControl)
+ThisWorkbook.Tile_updated
+End Sub
 Public Sub SetupCaller(ByVal control As IRibbonControl)
 ThisWorkbook.Setup
 End Sub
@@ -131,89 +134,104 @@ End Sub
 
 
 Sub Tile()
-
-  Dim resp As String
-  Dim res As Integer
+    Dim resp As String
+    Dim res As Integer
+    Dim names As String
+    Dim argument As String
+    Dim sample As String
+    Dim firstAddress As String
+    Dim names1() As String
+    Dim tempArray() As String
   
-  If user = "" Or psswd = "" Or server = "" Then
-    ThisWorkbook.Setup
-  End If
+    If user = "" Or psswd = "" Or server = "" Then
+        ThisWorkbook.Setup
+    End If
     
-  If (user <> "") And (psswd <> "") And (server <> "") Then
+    If (user <> "") And (psswd <> "") And (server <> "") Then
+        Dim count As Integer
+        Dim TCount As Integer
     
-    Dim exp As String, pltwell As String, num As String
-    Dim dims As String, xdim As String, ydim As String, zdim As String
-    Dim temp As String
-    Dim tim As String
-    Dim rowcol As String
-    Dim scl As String
-    Dim slide As String
-    
-    
-    Dim count As Integer
-    Dim TCount As Integer
-    
-    count = 0
-    TCount = 0
-    
-    Dim a As Range, b As Range
-    Set a = Selection
-
-    Application.DisplayStatusBar = True
-    Application.StatusBar = "Start Tiling..."
-
-    For Each b In a.Rows
-    
-        exp = Left(ActiveCell.Offset(b.Row - ActiveCell.Row, 2 - ActiveCell.Column).Value, 6) 'Get experiment name of the sample
-        pltwell = Right(ActiveCell.Offset(b.Row - ActiveCell.Row, 2 - ActiveCell.Column).Value, 6) 'Get plate number and well number of the sample
-        dims = ActiveCell.Offset(b.Row - ActiveCell.Row, 7 - ActiveCell.Column).Value 'Get the dimensions of the imaged sample
-        xdim = Mid(dims, InStr(dims, "x") + 1, InStr(dims, "y") - InStr(dims, "x") - 1) 'X-dimension
-        ydim = Mid(dims, InStr(dims, "y") + 1, InStr(dims, "z") - InStr(dims, "y") - 1) 'Y-dimension
-        zdim = Mid(dims, InStr(dims, "z") + 1, Len(dims) - InStr(dims, "z")) 'Z-dimension
-        temp = Split(ActiveCell.Offset(b.Row - ActiveCell.Row, 3 - ActiveCell.Column).Value, ".")(0) 'Raw image-tile name
-        num = Right(temp, Len(temp) - InStr(temp, "_L") - 1) 'Starting image number
-        tim = Mid(temp, 14, 10) 'Timestamp
-        slide = Mid(temp, 11, 2) 'Slide number
-        temp = ActiveCell.Offset(b.Row - ActiveCell.Row, 8 - ActiveCell.Column).Value 'Direction and Orientation of imaging
-        scl = Left(Split(ActiveCell.Offset(b.Row - ActiveCell.Row, 9 - ActiveCell.Column).Value, ".")(0), 2) 'Magnification (default=20)
+        count = 0
+        TCount = 0
         
-        If UBound(Split(temp, ":")) > 0 Then
-            rowcol = Split(temp, ":")(1)
-        Else
-            rowcol = ""
-        End If
+        Dim a As Range, b As Range, c As Range, d As Range
         
-        res = vbYes
-        If Left(ActiveCell.Offset(b.Row - ActiveCell.Row, 11 - ActiveCell.Column).Value, 4) = "Tile" Then
-            res = MsgBox("Already Tiled: " & exp & pltwell & ". Do you want to Re-Tile?", vbYesNo)
-        ElseIf Left(ActiveCell.Offset(b.Row - ActiveCell.Row, 11 - ActiveCell.Column).Value, 4) = "Tili" Then
-            res = MsgBox("Tiling in process: " & exp & pltwell & ". Do you want to restart?", vbYesNo)
-            If res = vbYes Then
-                resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " qdel " & Split(ActiveCell.Offset(b.Row - ActiveCell.Row, 11 - ActiveCell.Column).Value, ":")(2), "")
-                resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " /home/" & user & "/scripts/clean_" & exp & pltwell & tim & ".sh", "")
+        Set a = Selection
+    
+        For Each b In Sheet3.Range(Cells(1, 1), Cells(1, Sheet3.Cells(1, Sheet3.Columns.count).End(xlToLeft).Column))
+            names = names & "--" & b.Value & " "
+        Next
+        
+        ThisWorkbook.Sheets("Inventory").Activate
+        For Each b In Sheet1.Range(Cells(1, 1), Cells(1, Sheet1.Cells(1, Sheet1.Columns.count).End(xlToLeft).Column))
+            names = names & "--" & b.Value & " "
+        Next
+        names1 = Split(names, " ")
+        
+        Application.DisplayStatusBar = True
+        Application.StatusBar = "Start Tiling..."
+        
+        For Each b In a.Rows
+            ThisWorkbook.Sheets("MicroImages").Activate
+            argument = ""
+            count = 0
+            sample = ActiveCell.Offset(b.Row - ActiveCell.Row, 2 - ActiveCell.Column).Value
+            For Each c In Sheet3.Range(Cells(b.Row, 1), Cells(b.Row, Sheet3.Cells(1, Sheet3.Columns.count).End(xlToLeft).Column))
+                argument = argument & " " & names1(count) & " " & "'" & c.Value & "'"
+                count = count + 1
+            Next
+            
+            ThisWorkbook.Sheets("Inventory").Activate
+            With Sheet1.Columns(2)
+                Set c = .Find(sample, lookat:=xlPart)
+                If Not c Is Nothing Then
+                    firstAddress = c.Address
+                    Do
+                        For Each d In Sheet1.Range(Cells(c.Row, 1), Cells(c.Row, Sheet1.Cells(1, Sheet1.Columns.count).End(xlToLeft).Column))
+                            argument = argument & " " & names1(count) & " " & "'" & d.Value & "'"
+                            count = count + 1
+                        Next
+                        Set c = .FindNext(c)
+                    Loop While Not c Is Nothing And c.Address <> firstAddress
+                End If
+            End With
+            ThisWorkbook.Sheets("MicroImages").Activate
+            
+            res = vbYes
+            If Left(ActiveCell.Offset(b.Row - ActiveCell.Row, 11 - ActiveCell.Column).Value, 4) = "Tile" Then
+                res = MsgBox("Already Tiled: " & ActiveCell.Offset(b.Row - ActiveCell.Row, 2 - ActiveCell.Column).Value & ". Do you want to Re-Tile?", vbYesNo)
+            ElseIf Left(ActiveCell.Offset(b.Row - ActiveCell.Row, 11 - ActiveCell.Column).Value, 4) = "Tili" Then
+                res = MsgBox("Tiling in process: " & ActiveCell.Offset(b.Row - ActiveCell.Row, 2 - ActiveCell.Column).Value & ". Do you want to restart?", vbYesNo)
+                If res = vbYes Then
+                    resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " qdel " & Split(ActiveCell.Offset(b.Row - ActiveCell.Row, 11 - ActiveCell.Column).Value, ":")(2), "")
+                    'resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " /home/" & user & "/scripts/clean_" & exp & pltwell & tim & ".sh", "")
+                End If
             End If
-        End If
         
-        If res = vbYes Then
-            Application.StatusBar = "Start Tiling: " & exp & pltwell
-            'resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " /home/" & user & "/scripts/del_uploaded.sh " & exp & " " & pltwell & " " & tim, "")
-            'resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " /home/" & user & "/scripts/del.sh " & exp & " " & pltwell & " " & tim, "")
-
-            resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " /home/" & user & "/scripts/run_tiling_new.sh " & exp & " " & pltwell & " " & num & " " & xdim & " " & ydim & " " & zdim & " " & tim & " " & rowcol & " " & scl & " " & slide, "")
-                        
-            Cells(b.Row, 11) = "Tiling:" & user & ":" & Split(resp, ".")(0)
-            count = count + 1
-            TCount = TCount + 1
+            If res = vbYes Then
+                Application.StatusBar = "Start Tiling: " & ActiveCell.Offset(b.Row - ActiveCell.Row, 2 - ActiveCell.Column).Value
+                'resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " /home/" & user & "/scripts/del_uploaded.sh " & exp & " " & pltwell & " " & tim, "")
+                'resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " /home/" & user & "/scripts/del.sh " & exp & " " & pltwell & " " & tim, "")
+                
+                'MsgBox (comm & " -batch -pw " & psswd & " " & user & "@" & server & " /home/" & user & "/scripts/run_tiling.sh " & argument)
+                resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " /home/" & user & "/scripts/run_tiling.sh " & argument, "")
+                'MsgBox (resp)
+                
+                tempArray = Split(resp, vbLf)
+                resp = tempArray(UBound(tempArray) - 1)
+                Cells(b.Row, 11) = "Tiling:" & user & ":" & Split(resp, ".")(0)
+                TCount = TCount + 1
             
-            Application.StatusBar = "Started Tiling: " & exp & pltwell
+                Application.StatusBar = "Started Tiling: " & ActiveCell.Offset(b.Row - ActiveCell.Row, 2 - ActiveCell.Column).Value
             
-        End If
-    Next
-    Application.StatusBar = "Tiling Started: " & count
-    ThisWorkbook.UpdateStatus
-    
-  End If
+            End If
+            'MsgBox (argument)
+        Next
+        Application.StatusBar = "Tiling Started: " & TCount
+        'ThisWorkbook.UpdateStatus
+    End If
 End Sub
+
 
 Sub Setup()
 
@@ -239,7 +257,7 @@ Sub Setup()
 End Sub
 
 Sub SetDefault()
-    server = "biohen.dbi.udel.edu"
+    server = "biomix.dbi.udel.edu"
     user = "abhi"
     psswd = "aMazingMaze"
     'comm = "plink"
@@ -294,6 +312,8 @@ Sub UpdateStatus()
     Dim resp As String
     Dim firstAddress As String
     Dim count As Integer
+    Dim NumServerCalls As Integer
+    Dim NumAttempts As Integer
     Dim i As Long
     Dim aFirstArray() As Variant
     Dim ls As Variant
@@ -304,6 +324,18 @@ Sub UpdateStatus()
     Dim tim As String
     Dim timc As String
     Dim temp As String
+    Dim command As String
+    
+    'On Error Resume Next
+    'With Sheet3.Columns(11)
+    'Set c = .Find("Tiling", lookat:=xlPart)
+    'firstAddress = c.Address
+    'Do
+       'a = Cells(c.Row, 2).Value
+       'arr.Add a, a
+        'Set c = .FindNext(c)
+    'Loop While Not c Is Nothing And c.Address <> firstAddress
+    'End With
     
     aFirstArray = Range("B2:B" & Cells(Rows.count, "A").End(xlUp).Row).Value
     
@@ -314,6 +346,7 @@ Sub UpdateStatus()
     Next
 
     count = 0
+    NumServerCalls = 0
     
     If user = "" Or psswd = "" Or server = "" Then
         ThisWorkbook.Setup
@@ -322,12 +355,13 @@ Sub UpdateStatus()
     Application.DisplayStatusBar = True
     Application.StatusBar = "Updating Status..."
     
+    command = ""
     For i = 1 To arr.count
      exp = Left(arr(i), 6)
      pl = Right(arr(i), 3)
      Application.StatusBar = "Updating Exp: " & exp & " Plate: " & Right(pl, 2)
-     
-     resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " /home/" & user & "/scripts/check_tiled_new.sh " & exp & " " & pl, "")
+    
+     resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " /home/" & user & "/scripts/check_tiled.sh " & exp & " " & pl, "")
      ls = Split(resp, vbLf)
      For Each a In ls
         If a <> "" Then
@@ -349,12 +383,12 @@ Sub UpdateStatus()
                             'resp = Split(resp, vbLf)(0)
                             'If resp = siz And user = usr Then
                             If user = usr Then
-                                resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " qstat | grep " & user, "")
+                                'resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " qstat | grep " & user, "")
                                 
-                                If resp <> "" Then
-                                    resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " qdel " & Split(Cells(c.Row, 11).Value, ":")(2), "")
-                                    resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " /home/" & user & "/scripts/clean_" & exp & plwl & tim & ".sh", "")
-                                End If
+                                'If resp <> "" Then
+                                    'resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " qdel " & Split(Cells(c.Row, 11).Value, ":")(2), "")
+                                    'resp = Redirect(comm & " -batch -pw " & psswd & " " & user & "@" & server & " /home/" & user & "/scripts/clean_" & exp & plwl & tim & ".sh", "")
+                                'End If
                                 Cells(c.Row, 11) = "Tiled:" & usr
                                 count = count + 1
                             'ElseIf resp = siz Then
@@ -383,4 +417,33 @@ Sub UpdateStatus()
         End If
     End With
 End Sub
+
+Public Function Pause(NumberOfSeconds As Variant)
+    On Error GoTo Error_GoTo
+
+    Dim PauseTime As Variant
+    Dim Start As Variant
+    Dim Elapsed As Variant
+
+    PauseTime = NumberOfSeconds
+    Start = Timer
+    Elapsed = 0
+    Do While Timer < Start + PauseTime
+        Elapsed = Elapsed + 1
+        If Timer = 0 Then
+            ' Crossing midnight
+            PauseTime = PauseTime - Elapsed
+            Start = 0
+            Elapsed = 0
+        End If
+        DoEvents
+    Loop
+
+Exit_GoTo:
+    On Error GoTo 0
+    Exit Function
+Error_GoTo:
+    Debug.Print Err.Number, Err.Description, Erl
+    GoTo Exit_GoTo
+End Function
 
