@@ -1,4 +1,16 @@
 function [pts,finalenergy] = snakeiter3D1(im,pts,neighbor,w,ply,alpha,beta,gamma)
+%dynamic programming to optimize the position of control points on the
+%snakes. Only one degree of freedom which is translation along the Z-axis.
+%Inputs:
+%   im          --> input 3D image
+%   pts         --> 3D positions of control points
+%   neighbor    --> search space to find the optimal z-position of control points.
+%   w           --> image patch size to use for cimputing external energy
+%   ply         --> Linear constraint on the position of control points(line equation).
+%   alpha       --> weight for external energy.
+%   beta        --> weight for internal energy which is based on appearance smoothness.
+%   gamma       --> weight for internal energy which is based on linear constraint
+
 [~,~,pp] = size(im);
 m = numel(neighbor);
 n = size(pts,1);
@@ -9,13 +21,8 @@ im = padarray(im,round([0, 0, m/2]));
 pts(:,3) = pts(:,3) + floor(m/2);
 
 for i=1:n-1
-    %     [x,y] = find(D==i);
-    %     x = [x,x-1,x+1]; y = [y,y-1,y+1];
-    %     x(x<1 | x>nn) = []; y(y<1 | y>mm)=[];
-    %     inds = D(y,x);
-    %     tpts = pts(inds(:),:);
     for j=1:m
-        minenergy = 10000000;
+        minenergy = inf;
         minpos = round(numel(neighbor)/2);
         pt2 = pts(i+1,:) + [0 0 neighbor(j)];
         exte = getexternalenergy(pt2,im,w);
@@ -23,7 +30,6 @@ for i=1:n-1
         im2 = double(im(pt2(2)-w:pt2(2), pt2(1)-w:pt2(1)+w, pt2(3)))/255;
         im2 = im2(:) - mean(im2(:)); im2 = im2/norm(im2);
         for k=1:m
-%             disp([i,j,k]);
             pt1 = pts(i,:) + [0 0 neighbor(k)];
             im1 = double(im(pt1(2):pt1(2)+w, pt1(1)-w:pt1(1)+w, pt1(3)))/255;
             im1 = im1(:) - mean(im1(:)); im1 = im1/norm(im1);
@@ -62,7 +68,11 @@ A = [pts(:,2),pts(:,1),ones(size(pts,1),1)];
 ie = sum(abs(pts(:,3)-A*(A\pts(:,3))));
 end
 
+%external energy based on image brightness and sharpness
 function ee = getexternalenergy(pts,im,w)
+%im --> input image
+%pts --> positions on the image around which an image patch is extracted
+%w  --> image patch size.
 ee=0;
 n = size(pts,1);
 for i=1:n
