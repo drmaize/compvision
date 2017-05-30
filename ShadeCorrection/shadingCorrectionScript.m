@@ -1,10 +1,10 @@
 path = ['/mnt/data27/wisser/drmaize/image_data/',experiment,'/microimages/reconstructed/'];
 
 rot=0;
-    fname1 = [path,'exp',experiment,'p',plt,'w',well,timestamp,'rl001.ome.tif'];
-    sname1 = [path,'exp',experiment,'p',plt,'w',well,timestamp,'rl001.tif'];
-    fname2 = [path,'exp',experiment,'p',plt,'w',well,timestamp,'rf001.ome.tif'];
-    sname2 = [path,'exp',experiment,'p',plt,'w',well,timestamp,'rf001.tif'];
+    fname1 = [path,'exp',experiment,'p',plt,'w',well,timestamp,'rl001.ome.tif']; %input leaf channel image
+    sname1 = [path,'exp',experiment,'p',plt,'w',well,timestamp,'rl001.tif']; %shade corrected leaf channel image
+    fname2 = [path,'exp',experiment,'p',plt,'w',well,timestamp,'rf001.ome.tif']; %input fungal channel image
+    sname2 = [path,'exp',experiment,'p',plt,'w',well,timestamp,'rf001.tif']; %shade corrected fungal channel image
     
     info = imfinfo(fname1);
     for i=1:numel(info)
