@@ -1,3 +1,5 @@
+To run the test script "quantify_example_script", please download the (rather large) data from biomix.dbi.udel.edu  /home/saponaro/compute_metrics/e013SLBp03wA1x20_1505041720rf001 that is expected as input.
+
 Everything should have already been run on Exp13. 
 image_data\e013SLB\microimages\reconstructed\HS\phil_results\quantified_numbers\
 
