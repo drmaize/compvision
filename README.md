@@ -19,16 +19,14 @@ This was developed in Matlab 2017 and tested recently on Matlab 2019b on a 64-bi
 
 ```./SkeletonConnectCode.exe myStackIn.tif outStack.tif```
 
- 
-The full list of parameters is given below and must be passed in order:
+The full list of parameters is given below and must be passed in order as strings:
 
-ConnectSkeleton(in_filename, out_filename, gap_length, scale, endpointsOnly, window_sz, Verbose)
 -in_filename: required. path to Nd skeleton to process
 
 -out_filename: required. path to write the results
 
 -gap_length (optional): a single number representing
- the furthest gap the algorithm will connect. Default 50
+ the furthest gap the algorithm will connect in pixels. Default 50. Warning: setting this high can slow down computation
 
 -scale (optional): a 1xN array, where N is the dimension of bw
  containing the scale in each dimension. Useful for medical or
@@ -46,9 +44,9 @@ ConnectSkeleton(in_filename, out_filename, gap_length, scale, endpointsOnly, win
  Useful if the original bw array is very large in memory.
  Set all values <= 1 to run on the entire array. Default is all 30s
 
--verbose (optional): a logical flag (0 or 1) that determines if the
- program prints to the screen its progress. Default 1
 
+
+```.\SkeletonConnectCode.exe myStackIn.tif outStack.tif "30" "2" "[1 1 3]" "[100 100 100]"```
 
 # Citations of our work
 1) [P. Saponaro et al., "DeepXScope: Segmenting Microscopy Images with a Deep Neural Network," 2017 IEEE Conference on Computer Vision and Pattern Recognition Workshops (CVPRW), Honolulu, HI, 2017, pp. 843-850, doi: 10.1109/CVPRW.2017.117.](http://openaccess.thecvf.com/content_cvpr_2017_workshops/w8/papers/Saponaro_DeepXScope_Segmenting_Microscopy_CVPR_2017_paper.pdf)
