@@ -4,3 +4,5 @@ Surface estimation is the process of taking a 3D stack and finding the depth of 
 This was developed in Matlab 2017 and tested recently on Matlab 2019b on a 64-bit Windows 10 machine. The stand-alone installer does not require Matlab, but does require 64-bit Windows 10. Once the program is installed it can be run by calling the .exe with an input and output file location, e.g.
 
 ```./SurfaceEstimation.exe myStackIn.tif out```
+
+The program will create two files: out.png and out.txt which contains the surface image and the surface depth values.
