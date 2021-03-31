@@ -16,6 +16,46 @@ This was developed in Matlab 2017 and tested recently on Matlab 2019b on a 64-bi
 ```./SkeletonConnectCode.exe myStackIn.tif outStack.tif```
 
 # Segmentation with DeepXScope
+Segmentation is the process of taking an image and extracting the pixels of objects of interest. The input is an image (or stack of images), and the output is a gray-scale image (or stack of images) where the pixel intensity represents the confidence that a pixel is the object of interest. These confidence values are then thresholded and futher processed to obtain a binary image (or stack of images). 
+
+DeepXScope is a U-net based network trained to extract cells and stomates from a surface image, and fungal hyphae networks in image stacks. It is implemented in Python 3.6 with the Keras framework version 2.0.8, built on TensorFlow 1.5 with cuDNN 11. The release contains the requirements.txt for installing the Python packages.
+
+Python 3.6: https://www.python.org/downloads/release/python-360/
+
+TensorFlow 1.5 can be installed via pip, which comes with Python 3.6:
+
+```pip3 install tensorflow==1.5```
+
+We tested on a machine with Nvidia GTX 1080, and used cuDNN version 11: 
+
+https://developer.nvidia.com/cudnn
+
+Finally, the required Python packages can be installed via pip and the provided requirements.txt file with 
+
+```pip install -r requirements.txt```
+
+Once everything is installed, DeepXScope can be used by calling the SegmentObjects.py file
+
+```python3 SegmentObjects.py -i in_path -o out_path -a architecture_path -w weights_path -n normalization_factor -nc clip_value```
+
+The full list of parameters is given below and can be passed in any order:
+
+-i in_path: required. Path to image or .tiff image stack to process. Image stacks will be processed slice by slice automatically
+
+-o out_path: required. Path to save result to. Image stacks should be saved as .tiff
+
+-a architecture_path: required. Path to model architecture in .json format from Keras. Our models are included in the release
+
+-w weights_path: required. Path to model weights in .h5 file from Keras. Our models are included in the release.
+
+-n normalization_factor. optional. The input image pixels are divided by this value to normalize the pixel range. Default is to use the image mean. We used 120 for cell/stomates and 1 for fungus.
+
+-nc clip_value. optional. Will clip image pixels that lie above the clip_value. Default is 1. We use 1 for cell/stomates and 255 for fungus.
+
+An example from our data is 
+
+```python3 SegmentObjects.py -i D:\drmaize\FullSegmentation\test_images\e025SLBp01wA5x20_1610041600rl001_surface.png -o D:\drmaize\FullSegmentation\e025SLBp01wA5x20_1610041600rl001_surface.png -a D:\drmaize\FullSegmentation\cell_architecture.json -w D:\drmaize\FullSegmentation\cell_weights.h5```
+
 
 # Skeleton Connection
 Segmentation of an object from an image or stack is not always perfect. Imperfections in the data itself (shading, non-uniform staining, occlusions, etc) or failures in the algorithm can cause small gaps when skeletonizing, and this can drastically alter quantification results (number of fungal networks, size of the networks, etc). To mitigate this, we release this Skeleton Connector that relies on a minimum spanning tree based algorithm to connect gaps in a skeleton network. This code will work on any dimensional data (1D line, 2D image, 3D stack, ..., ND, etc)
@@ -58,9 +98,14 @@ The full list of parameters is given below and must be passed in order as string
 
 2) [P. Saponaro et al., "Three-dimensional segmentation of vesicular networks of fungal hyphae in macroscopic microscopy image stacks," 2017 IEEE International Conference on Image Processing (ICIP), Beijing, China, 2017, pp. 3285-3289, doi: 10.1109/ICIP.2017.8296890.](https://ieeexplore.ieee.org/iel7/8267582/8296222/08296890.pdf)
 
+3) [Minker, K. R. et al. “Semiautomated confocal imaging of fungal pathogenesis on plants: Microscopic analysis of macroscopic specimens.” Microscopy Research and Technique 81 (2018): n. pag.](https://analyticalsciencejournals.onlinelibrary.wiley.com/doi/full/10.1002/jemt.22709)
+
+4) [Kolagunda, Abhishek et al. “Detection of fungal spores in 3D microscopy images of macroscopic areas of host tissue.” 2016 IEEE International Conference on Bioinformatics and Biomedicine (BIBM) (2016): 479-483.](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=7822564&tag=1)
+
 ## Bibtex 
 1) 
- ``` @INPROCEEDINGS{8014851,
+ ``` 
+ @INPROCEEDINGS{8014851,
   author={P. {Saponaro} and W. {Treible} and A. {Kolagunda} and T. {Chaya} and J. {Caplan} and C. {Kambhamettu} and R. {Wisser}},
   booktitle={2017 IEEE Conference on Computer Vision and Pattern Recognition Workshops (CVPRW)}, 
   title={DeepXScope: Segmenting Microscopy Images with a Deep Neural Network}, 
@@ -71,7 +116,8 @@ The full list of parameters is given below and must be passed in order as string
   doi={10.1109/CVPRW.2017.117}}
   ```
 2)
- ```@INPROCEEDINGS{8296890,
+ ```
+ @INPROCEEDINGS{8296890,
   author={P. {Saponaro} and W. {Treible} and A. {Kolagunda} and S. {Rhein} and J. {Caplan} and C. {Kambhamettu} and R. {Wisser}},
   booktitle={2017 IEEE International Conference on Image Processing (ICIP)}, 
   title={Three-dimensional segmentation of vesicular networks of fungal hyphae in macroscopic microscopy image stacks}, 
@@ -81,7 +127,21 @@ The full list of parameters is given below and must be passed in order as string
   pages={3285-3289},
   doi={10.1109/ICIP.2017.8296890}}
   ```
-
-  
-
-
+3)
+```
+@article{Minker2018SemiautomatedCI,
+  title={Semiautomated confocal imaging of fungal pathogenesis on plants: Microscopic analysis of macroscopic specimens},
+  author={K. R. Minker and M. Biedrzycki and Abhishek Kolagunda and Stephen Rhein and F. J. Perina and Samuel S. Jacobs and M. Moore and T. Jamann and Q. Yang and R. Nelson and P. Balint-Kurti and C. Kambhamettu and R. Wisser and J. Caplan},
+  journal={Microscopy Research and Technique},
+  year={2018},
+  volume={81}}
+  ```
+4)
+```
+@article{Kolagunda2016DetectionOF,
+  title={Detection of fungal spores in 3D microscopy images of macroscopic areas of host tissue},
+  author={Abhishek Kolagunda and Randall Wisser and Timothy Chaya and J. Caplan and C. Kambhamettu},
+  journal={2016 IEEE International Conference on Bioinformatics and Biomedicine (BIBM)},
+  year={2016},
+  pages={479-483}}
+  ```
