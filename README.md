@@ -13,7 +13,7 @@ Surface estimation is the process of taking a 3D stack and finding the depth of 
 
 This was developed in Matlab 2017 and tested recently on Matlab 2019b on a 64-bit Windows 10 machine. The stand-alone installer does not require Matlab, but does require 64-bit Windows 10. Once the program is installed it can be run by calling the .exe with an input and output file location, e.g.
 
-```./SkeletonConnectCode.exe myStackIn.tif outStack.tif```
+```./SurfaceEstimation.exe myStackIn.tif out```
 
 # Segmentation with DeepXScope
 Segmentation is the process of taking an image and extracting the pixels of objects of interest. The input is an image (or stack of images), and the output is a gray-scale image (or stack of images) where the pixel intensity represents the confidence that a pixel is the object of interest. These confidence values are then thresholded and futher processed to obtain a binary image (or stack of images). 
