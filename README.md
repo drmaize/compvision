@@ -15,6 +15,8 @@ This was developed in Matlab 2017 and tested recently on Matlab 2019b on a 64-bi
 
 ```./SurfaceEstimation.exe myStackIn.tif out```
 
+The program will create two files: out.png and out.txt which contains the surface image and the surface depth values.
+
 # Segmentation with DeepXScope
 Segmentation is the process of taking an image and extracting the pixels of objects of interest. The input is an image (or stack of images), and the output is a gray-scale image (or stack of images) where the pixel intensity represents the confidence that a pixel is the object of interest. These confidence values are then thresholded and futher processed to obtain a binary image (or stack of images). 
 
