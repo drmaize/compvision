@@ -1,0 +1,10 @@
+args = split(getArgument()," "); 
+in_name = args[0];
+out_name = args[1];
+open(in_name);
+run("Open", "stack");
+saveAs("Tiff", out_name);
+
+eval("script", "System.exit(0);"); 
+
+
