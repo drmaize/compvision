@@ -7,6 +7,7 @@ The Dr. Maize project images fungal pathogens in maize for the purposes of measu
 - The dependencies vary for each module and are listed in their respective sections, but in a future update we will release with Docker. 
 - The runable executables and installers are available on GitHub: https://github.com/drmaize/compvision/releases/tag/1.00
 - The deep learning weights and models are also available on GitHub: https://github.com/drmaize/compvision/releases/tag/1.00
+- Fiji ImageJ can be found: https://imagej.net/Fiji/Downloads
 
 # Surface Estimation
 Surface estimation is the process of taking a 3D stack and finding the depth of the surface for each pixel in a 2D view from above. This allows quantification of the depth of the pathogen and quantification of features that lie on the surface of the plant (e.g. stomata segmentation and locations). We use an active contour/snake optimization with uniformly initialized control points to perform this. 
