@@ -7,7 +7,7 @@ We tested our Fiji ImageJ scripts and batch commands on 64-bit Windows 10.
 
 To perform the default auto-thresholding algorithm, run the following from the command line:
 
-```.\threshold.bat input_path output_path ``` 
+```.\threshold_default.bat input_path output_path ``` 
 
 To perform Otsu's auto-thresholding algorithm, run the following from the command line:
 
