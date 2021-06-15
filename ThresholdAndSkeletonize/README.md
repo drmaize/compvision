@@ -27,3 +27,5 @@ Finally to perform Skeletonization, run the following commnand:
 
 Skeletonization uses the (built-in) plug-in Skeletonize3d found here: https://imagejdocu.tudor.lu/doku.php?id=plugin:morphology:skeletonize3d:start
 
+Note that this assumes you are running the .bat files in the local directory containing both them and the .txt macros. The Docker container we provide is modified so that the .bat files are on the system path and the .txt files are referenced via their hardcoded install location. Meaning on the Docker container the .bat files can be called from anywhere. This is not true if you manually downloaded the .bat files, and they must be run in their local directory. 
+
