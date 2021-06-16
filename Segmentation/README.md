@@ -21,6 +21,8 @@ Once everything is installed, DeepXScope can be used by calling the SegmentObjec
 
 ```python3 SegmentObjects.py -i in_path -o out_path -a architecture_path -w weights_path -n normalization_factor -nc clip_value```
 
+The architecture and weights files can be downloaded from the release: https://github.com/drmaize/compvision/releases/tag/1.00
+
 The full list of parameters is given below and can be passed in any order:
 
 -i in_path: required. Path to image or .tiff image stack to process. Image stacks will be processed slice by slice automatically
