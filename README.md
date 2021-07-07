@@ -16,9 +16,29 @@ To download Docker on Windows:  https://docs.docker.com/docker-for-windows/insta
 
 Once installed, go to Settings (gear symbol) -> General -> Uncheck use the WSL2 backend. Then, in the Docker Desktop menu on the Windows bottom-right taskbar, right click and hit "Switch to Windows Containers" (https://docs.docker.com/docker-for-windows/#switch-between-windows-and-linux-containers). This should set up Docker to accept our image.
 
-Our image can be found on the Docker Hub: https://hub.docker.com/r/drmaizeproject/windows10. Open up a powershell and type docker pull drmaizeproject/windows10:version1 which will download and install our container. After that type docker run --dns 8.8.8.8 -p 8080:80 -itd --memory="30G" --name drmaize drmaizeproject/windows10:version1 to start a container from the image and then docker exec -it drmaize powershell to open a powershell inside the container. Note that the docker run command given here gives 30G of memory to the container to use -- you can raise or lower this but you must give the container enough memory to handle your data.
+Our image can be found on the Docker Hub: https://hub.docker.com/r/drmaizeproject/windows10. Open up a powershell and type 
 
-Inside the container, example data is at C:\Data. The various modules can be found under C:\Program Files\ and C:\Program Files\University of Delaware. We have set the path to include the modules so they can be run from anywhere on the filesystem. e.g. SkeletonConnectCode.exe C:\Data\example_skel_to_connect.tif C:\Results\connected_skeleton.tif. Python is also installed globally. The only exception to this is the segmentation python file must be referenced when using python or CD'd into the local directory containing it, e.g. cd "C:\Program Files\University of Delaware\Segmentation\" and python SegmentObjects.py -i C:\Data\example_surface_raw.png -o C:\Results\cell_seg_from_alg.png -a cell_architecture.json -w cell_weights.h5
+```docker pull drmaizeproject/windows10:version1```
+
+which will download and install our container. After that type 
+
+```docker run --dns 8.8.8.8 -p 8080:80 -itd --memory="30G" --name drmaize drmaizeproject/windows10:version1```
+
+to start a container from the image and then 
+
+```docker exec -it drmaize powershell```
+
+to open a powershell inside the container. Note that the docker run command given here gives 30G of memory to the container to use -- you can raise or lower this but you must give the container enough memory to handle your data.
+
+Inside the container, example data is at C:\Data. The various modules can be found under C:\Program Files\ and C:\Program Files\University of Delaware. We have set the path to include the modules so they can be run from anywhere on the filesystem. e.g. 
+
+```SkeletonConnectCode.exe C:\Data\example_skel_to_connect.tif C:\Results\connected_skeleton.tif```. Python is also installed globally. The only exception to this is the segmentation python file must be referenced when using python or CD'd into the local directory containing it, e.g. 
+
+```cd "C:\Program Files\University of Delaware\Segmentation\"```
+
+and 
+
+```python SegmentObjects.py -i C:\Data\example_surface_raw.png -o C:\Results\cell_seg_from_alg.png -a cell_architecture.json -w cell_weights.h5```
 
 This is been tested on Windows 10 Pro machines
 
