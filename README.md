@@ -20,6 +20,8 @@ Our image can be found on the Docker Hub: https://hub.docker.com/r/drmaizeprojec
 
 Inside the container, example data is at C:\Data. The various modules can be found under C:\Program Files\ and C:\Program Files\University of Delaware. We have set the path to include the modules so they can be run from anywhere on the filesystem. e.g. SkeletonConnectCode.exe C:\Data\example_skel_to_connect.tif C:\Results\connected_skeleton.tif. Python is also installed globally. The only exception to this is the segmentation python file must be referenced when using python or CD'd into the local directory containing it, e.g. cd "C:\Program Files\University of Delaware\Segmentation\" and python SegmentObjects.py -i C:\Data\example_surface_raw.png -o C:\Results\cell_seg_from_alg.png -a cell_architecture.json -w cell_weights.h5
 
+This is been tested on Windows 10 Pro machines
+
 # Surface Estimation
 Surface estimation is the process of taking a 3D stack and finding the depth of the surface for each pixel in a 2D view from above. This allows quantification of the depth of the pathogen and quantification of features that lie on the surface of the plant (e.g. stomata segmentation and locations). We use an active contour/snake optimization with uniformly initialized control points to perform this. 
 
