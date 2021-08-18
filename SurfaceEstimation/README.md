@@ -7,6 +7,4 @@ For Windows: ```./SurfaceEstimation.exe myStackIn.tif out```
 For Linux: ```./run_SurfaceEstimation.sh /usr/local/MATLAB/MATLAB_Runtime/v910  myStackIn.tif out```  
 where  /usr/local/MATLAB/MATLAB_Runtime/v910 is the path to the Matlab Runtime (Linux requirement only)
 
-where /usr/local/MATLAB/MATLAB_Runtime/v910 is the path to the Matlab Runtime installed (requirement for Linux only). 
-
 The program will create two files: out.png and out.txt which contains the surface image and the surface depth values.
