@@ -1,10 +1,11 @@
 # Skeleton Connection
 Segmentation of an object from an image or stack is not always perfect. Imperfections in the data itself (shading, non-uniform staining, occlusions, etc) or failures in the algorithm can cause small gaps when skeletonizing, and this can drastically alter quantification results (number of fungal networks, size of the networks, etc). To mitigate this, we release this Skeleton Connector that relies on a minimum spanning tree based algorithm to connect gaps in a skeleton network. This code will work on any dimensional data (1D line, 2D image, 3D stack, ..., ND, etc)
 
-This was developed in Matlab 2017 and tested recently on Matlab 2019b on a 64-bit Windows 10 machine. The stand-alone installer does not require Matlab, but does require 64-bit Windows 10. Once the program is installed it can be run by calling the .exe with an input and output file location, e.g.
+This was developed in Matlab 2017 and tested recently on Matlab 2019b on a 64-bit Windows 10 machine, as well as Matlab 2021a on Ubuntu 20.04. The stand-alone installer does not require Matlab, but does require 64-bit Windows 10 or Ubuntu. Once the program is installed it can be run by calling the .exe with an input and output file location, e.g.
 
-```./SkeletonConnectCode.exe myStackIn.tif outStack.tif```
-
+For Windows: ```./SkeletonConnectCode.exe myStackIn.tif outStack.tif``` 
+For Linux: ```./run_ConnectSkeleton.sh /usr/local/MATLAB//MATLAB_Runtime/v910/ myStackIn.tif utStack.tif```  
+where /usr/local/MATLAB/MATLAB_Runtime/v910 is the path to the Matlab Runtime installed (requirement for Linux only). 
 The full list of parameters is given below and must be passed in order as strings:
 
 -in_filename: required. path to Nd skeleton to process
