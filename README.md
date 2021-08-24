@@ -157,6 +157,8 @@ The full list of parameters is given below and must be passed in order as string
  containing a window size of how to break up the original bw array.
  Useful if the original bw array is very large in memory.
  Set all values <= 1 to run on the entire array. Default is all 30s
+ 
+ ```.\SkeletonConnectCode.exe myStackIn.tif outStack.tif "30" "2" "[1 1 3]" "[100 100 100]"```
 
 # Quantification of Phenotypes
 The final goal of this software package is to provide statistics, numbers, and counts of physical features for each structure. The code in this section reads as input the segmented and thresholded skeletons from previous sections, and as output generates both a Microsoft Excel spreadsheet and images. The spreadsheet contains a section for each structure of interest and uses a user-provided ID to append new detected structures and their attributes. 
