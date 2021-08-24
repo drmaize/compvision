@@ -4,7 +4,7 @@ The final goal of this software package is to provide statistics, numbers, and c
 This was developed and tested in Matlab 2019b on Windows 10 64 bit.  The stand-alone installer does not require Matlab, but does require 64-bit Windows 10. Once the program is installed it can be run by calling the .exe with the following command
 
 
-```.\QuantifyPhenotypes.exe "sample_identifier_string" "path_to_cells_skeleton.png" "path_to_stomates_skeleton.png" "path_to_fungus_skeleton.tif" "path_to_surface_map.txt" "path_to_surface_image.png" "penetration_depth_threshold" "[scalex scaley scalez]" "output_results.xlsx" "output_results_visualization.png"   ```
+```.\QuantifyPhenotypes.exe "sample_identifier_string" "path_to_cells_skeleton.png" "path_to_stomates_skeleton.png" "path_to_fungus_skeleton.tif" "path_to_fungus_segmentation.tif"  "path_to_surface_map.txt" "path_to_surface_image.png" "penetration_depth_threshold" "[scalex scaley scalez]" "output_results.xlsx" "output_results_visualization.png"   ```
 
 where 
 
@@ -15,6 +15,8 @@ where
 --path_to_stomates_skeleton.png is the path to the segmented and skeletonized stomata image generated from a previous section
 
 --path_to_fungal_skeleton.tif is the path to the segmented and skeletonized fungal 3D stack generated from a previous section
+
+--path_to_fungal_segmentation.tif is the path to the segmented and NOT skeletonized fungal 3D stack generated from a previous section
 
 --path_to_surface_map.txt is the path to the surace map generated from a previous section
 
