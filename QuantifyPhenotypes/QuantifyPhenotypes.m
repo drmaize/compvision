@@ -1,4 +1,4 @@
-function [] = QuantifyPhenotypes(data_name, infile_cells, infile_stomates, infile_fungal_skeleton, infile_surface_map, infile_surface_image, penetration_thresh, scale, outfile_results, outfile_visualization)
+function [] = QuantifyPhenotypes(data_name, infile_cells, infile_stomates, infile_fungal_skeleton, infile_fungal_segmentation, infile_surface_map, infile_surface_image, penetration_thresh, scale, outfile_results, outfile_visualization)
 %       Quantifies segmented structures. If a certain structure is not
 %       needed/wanted, leave a blank path "" and the processing will be
 %       skipped over
@@ -25,6 +25,9 @@ function [] = QuantifyPhenotypes(data_name, infile_cells, infile_stomates, infil
 %
 %       infile_infile_fungal_skeleton -- path to 3D tiff stack of segmented
 %       fungal hyphae skeleton
+%
+%       infile_fungal_segmentation -- path to 3D tiff stakc of segmented
+%       fungal hyphae, unskeletonied
 %
 %       penetration_thresh --  number of slices the fungus must go down
 %       before considered a penetration event. We used 6 in our experiments
@@ -97,12 +100,19 @@ else
    skeleton = skeleton(1:img_height, 1:img_width, :);
 end
 
+if ~exist(infile_fungal_segmentation,'file')
+   fungus_seg = [];
+else
+   fungus_seg = logical(readTiffStack(infile_fungal_segmentation));
+   fungus_seg = fungus_seg(1:img_height, 1:img_width, :);
+end
+
 %If the surface map and skeleton are given, calculate the penetration
 %events
-if(~isempty(skeleton) && ~isempty(surface_map))
+if(~isempty(skeleton) && ~isempty(surface_map) && ~isempty(fungus_seg))
 %    [ r_pen, c_pen, z_pen, depths, breadths, volumes, mip] = findSurfacePenetrations(skeleton, surface_map, penetration_thresh); 
    %visualizeSkeleton( skeleton , 'r.' ); hold on; plot3(c_pen, r_pen, z_pen, 'gx', 'MarkerSize', 50, 'LineWidth', 3);
-   [fungus_table, r_pen, c_pen, z_pen, depths, breadths, volumes, mip] = QuantifyFungus(skeleton, surface_map, penetration_thresh, scale);
+   [fungus_table, r_pen, c_pen, z_pen, depths, breadths, volumes, mip] = QuantifyFungus(skeleton, fungus_seg, surface_map, penetration_thresh, scale);
    Data_Identifier = repmat({data_name}, [height(fungus_table), 1]); 
    fungus_table = addvars(fungus_table,Data_Identifier,'Before','FungalHyphaeID');
    fungus_table_old = readSheet(outfile_results, 'FungalHyphae');
@@ -137,23 +147,22 @@ if(~isempty(cells_image) && ~isempty(r_pen))
 end
 
 %Output visualization
-if(~isempty(skeleton) && ~isempty(surface_map) && ~isempty(stomates_image) && ~isempty(cells_image))
+if(~isempty(skeleton) && ~isempty(surface_map) && ~isempty(stomates_image) && ~isempty(cells_image) && ~isempty(outfile_visualization))
    combined_image = cells_image_colored + stomates_image_colored + surface_image_colored ;
-   combined_image2 = cells_image_colored2 + stomates_image_colored;
-   combined_image3 = fungus_image_colored + cells_image_colored + stomates_image_colored + surface_image_colored ;
-   combined_image4 = fungus_image_colored + cells_image_colored2 + stomates_image_colored; 
+   combined_image = insertObjectAnnotation(combined_image,'circle',[c_pen r_pen repmat(25, [length(r_pen) 1])], repmat('', [length(r_pen) 1]), 'LineWidth', 5, 'Color', 'red');
+   imwrite(combined_image, [outfile_visualization '_1.png']);
    
-   if(~isempty(outfile_visualization))
-       figure; imshow(combined_image, []); hold on; plot(c_pen, r_pen, 'rx', 'MarkerSize', 10, 'LineWidth', 3);
-       saveas(gcf,[outfile_visualization '_1.png']);
-       figure; imshow(combined_image2, []); hold on; plot(c_pen, r_pen, 'rx', 'MarkerSize', 10, 'LineWidth', 3);
-       saveas(gcf,[outfile_visualization '_2.png']);
-       figure; imshow(combined_image3, []); hold on; plot(c_pen, r_pen, 'rx', 'MarkerSize', 10, 'LineWidth', 3);
-       saveas(gcf,[outfile_visualization '_3.png']);
-       figure; imshow(combined_image4, []); hold on; plot(c_pen, r_pen, 'rx', 'MarkerSize', 10, 'LineWidth', 3);
-       saveas(gcf,[outfile_visualization '_4.png']);
-       close all;
-   end
+   combined_image = cells_image_colored + stomates_image_colored;
+   combined_image = insertObjectAnnotation(combined_image,'circle',[c_pen r_pen repmat(25, [length(r_pen) 1])], repmat('', [length(r_pen) 1]), 'LineWidth', 5, 'Color', 'red');
+   imwrite(combined_image, [outfile_visualization '_2.png']);
+   
+   combined_image =  fungus_image_colored + cells_image_colored + stomates_image_colored + surface_image_colored ;
+   combined_image = insertObjectAnnotation(combined_image,'circle',[c_pen r_pen repmat(25, [length(r_pen) 1])], repmat('', [length(r_pen) 1]), 'LineWidth', 5, 'Color', 'red');
+   imwrite(combined_image, [outfile_visualization '_3.png']);
+   
+   combined_image = fungus_image_colored + cells_image_colored2 + stomates_image_colored ;
+   combined_image = insertObjectAnnotation(combined_image,'circle',[c_pen r_pen repmat(25, [length(r_pen) 1])], repmat('', [length(r_pen) 1]), 'LineWidth', 5, 'Color', 'red');
+   imwrite(combined_image, [outfile_visualization '_4.png']);
 end
 
 
