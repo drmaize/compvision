@@ -1,10 +1,11 @@
-function [avg_branch_length,num_branches,max_branch_length, num_triples, num_quads] = analyzeSkeleton(skeleton, scale)
+function [avg_branch_length,num_branches,max_branch_length, num_triples, num_quads, num_terminal] = analyzeSkeleton(skeleton, scale)
 % Turns the skeleton into a graph and analyze the features of the graph
 % such as branch lengths, amount of branching, etc. 
 [adjacency,nodes,edges] = Skel2Graph3D(skeleton,0);
 
 num_branches = size(edges, 2);
 branch_lengths = zeros(num_branches, 1);
+
 
 %To calculate the length of a branch in um
 %a straight line needs to be calculated between centers of neighboring
@@ -36,6 +37,7 @@ avg_branch_length = mean(branch_lengths);
 conns = cellfun(@length, {nodes.conn}); 
 num_triples = length(find(conns == 3));
 num_quads = length(find(conns == 4));
+num_terminal = length(find(conns == 1));
 
 end
 
