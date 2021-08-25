@@ -15,7 +15,9 @@ https://developer.nvidia.com/cudnn
 
 Finally, the required Python packages can be installed via pip and the provided requirements.txt file with 
 
-```pip install -r requirements.txt```
+```pip3 install -r requirements.txt```
+
+On Linux, we also needed to install the h5py package with  ```pip3 install h5py```
 
 Once everything is installed, DeepXScope can be used by calling the SegmentObjects.py file
 
