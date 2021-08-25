@@ -5,7 +5,7 @@ The final goal of this software package is to provide statistics, numbers, and c
 This was developed in Matlab 2019b on a 64-bit Windows 10 machine, as well as Matlab 2021a on Ubuntu 20.04. The stand-alone installer does not require Matlab, but does require 64-bit Windows 10 or Ubuntu. Once the program is installed it can be run by calling the .exe with an input and output file location, e.g.
 
 For Windows: 
-```.\QuantifyPhenotypes.exe "sample_identifier_string" "path_to_cells_skeleton.png" "path_to_stomates_skeleton.png" "path_to_fungus_skeleton.tif" "path_to_fungus_segmentation.tif"  "path_to_surface_map.txt" "path_to_surface_image.png" "penetration_depth_threshold" "[scalex scaley scalez]" "output_results.xlsx" "output_results_visualization.png"   ```
+```.\QuantifyPhenotypes.exe "sample_identifier_string" "path_to_cells_skeleton.png" "path_to_stomates_skeleton.png" "path_to_fungus_skeleton.tif" "path_to_fungus_segmentation.tif"  "path_to_surface_map.txt" "path_to_surface_image.png" "penetration_depth_threshold" "[scalex scaley scalez]" "output_results.xlsx" "output_results_visualization.png"   ```   
 For Linux: ```./run_QuantifyPhenotypes.sh /usr/local/MATLAB//MATLAB_Runtime/v910/ "sample_identifier_string" "path_to_cells_skeleton.png" "path_to_stomates_skeleton.png" "path_to_fungus_skeleton.tif" "path_to_fungus_segmentation.tif"  "path_to_surface_map.txt" "path_to_surface_image.png" "penetration_depth_threshold" "[scalex scaley scalez]" "output_results.xlsx" "output_results_visualization.png" ```
 where /usr/local/MATLAB/MATLAB_Runtime/v910 is the path to the Matlab Runtime installed (requirement for Linux only). The full list of parameters is given below and must be passed in order as strings:
 
