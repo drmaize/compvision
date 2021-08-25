@@ -41,4 +41,4 @@ An example from our data is
 
 ```python3 SegmentObjects.py -i D:\drmaize\FullSegmentation\test_images\e025SLBp01wA5x20_1610041600rl001_surface.png -o D:\drmaize\FullSegmentation\e025SLBp01wA5x20_1610041600rl001_surface.png -a D:\drmaize\FullSegmentation\cell_architecture.json -w D:\drmaize\FullSegmentation\cell_weights.h5```
 
-We suggest playing with the -n and -nc parameters on a single slice/frame to get a result you are satisfied with before running batch operations on large datasets. The fungus segmenter expects the data to be in the range 0-255 so  if you have 16-bit data or data outside the range, play with the normalization to get it into that range
+We suggest playing with the -n and -nc parameters on a single slice/frame/MIP to get a result you are satisfied with before running batch operations on large datasets. The fungus segmenter expects the data to be in the range 0-255 so  if you have 16-bit data or data outside the range, play with the normalization to get it into that range
