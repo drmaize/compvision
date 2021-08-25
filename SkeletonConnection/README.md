@@ -3,7 +3,7 @@ Segmentation of an object from an image or stack is not always perfect. Imperfec
 
 This was developed in Matlab 2017 and tested recently on Matlab 2019b on a 64-bit Windows 10 machine, as well as Matlab 2021a on Ubuntu 20.04. The stand-alone installer does not require Matlab, but does require 64-bit Windows 10 or Ubuntu. Once the program is installed it can be run by calling the .exe with an input and output file location, e.g.
 
-For Windows: ```./SkeletonConnectCode.exe myStackIn.tif outStack.tif``` 
+For Windows: ```./SkeletonConnectCode.exe myStackIn.tif outStack.tif```  
 For Linux: ```./run_ConnectSkeleton.sh /usr/local/MATLAB//MATLAB_Runtime/v910/ myStackIn.tif utStack.tif```  
 where /usr/local/MATLAB/MATLAB_Runtime/v910 is the path to the Matlab Runtime installed (requirement for Linux only). 
 The full list of parameters is given below and must be passed in order as strings:
