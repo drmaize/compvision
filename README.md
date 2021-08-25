@@ -72,6 +72,8 @@ Finally, the required Python packages can be installed via pip and the provided 
 
 ```pip install -r requirements.txt```
 
+On Linux, we also needed to install the h5py package with  ```pip3 install h5py```
+
 Once everything is installed, DeepXScope can be used by calling the SegmentObjects.py file
 
 ```python3 SegmentObjects.py -i in_path -o out_path -a architecture_path -w weights_path -n normalization_factor -nc clip_value```
