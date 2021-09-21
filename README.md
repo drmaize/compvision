@@ -7,7 +7,7 @@ The Dr. Maize project images fungal pathogens in maize for the purposes of measu
 - The dependencies vary for each module and are listed in their respective sections, but in a future update we will release with Docker. 
 - The runable executables and installers are available on GitHub: https://github.com/drmaize/compvision/releases/tag/1.00
 - The deep learning weights and models are also available on GitHub: https://github.com/drmaize/compvision/releases/tag/1.00
-- Fiji ImageJ can be found: https://imagej.net/Fiji/Downloads
+- Fiji ImageJ can be found: https://imagej.net/Fiji/Downloads. MAKE SURE TO DOWNLOAD FIJI (NOT IMAGEJ). THEY ARE SIMILAR BUT THE FUNCTIONALITY IS SLIGHTLY DIFFERENT
 
 # Docker Instructions
 As an alternative to downloading and installing the packages into your computer, we have packaged everything together into a Docker image for Windows 10. Note because the image is a Windows image, Hyper-v virtualization must be enabled; Hyper-V is available on 64-bit versions of Windows 10 Pro, Enterprise, and Education. It is not available on the Home edition. 
