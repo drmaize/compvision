@@ -16,7 +16,7 @@ The full list of parameters is given below and must be passed in order as string
  the furthest gap the algorithm will connect in pixels. Default 50. Warning: setting this high can slow down computation
 
 -scale (optional): a 1xN array, where N is the dimension of bw
- containing the scale in each dimension. Useful for medical or
+ containing the scale in each dimension. Used to weight each dimension differently for gap length. Useful for medical or
  biological data where the scan resolution is different in the z
  dimension. Default all 1s
 
