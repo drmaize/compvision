@@ -133,7 +133,7 @@ This was developed in Matlab 2017 and tested recently on Matlab 2019b on a 64-bi
 
 For Windows: ```./SkeletonConnectCode.exe myStackIn.tif outStack.tif```   
 
-For Linux: ```./run_ConnectSkeleton.sh /usr/local/MATLAB//MATLAB_Runtime/v910/ myStackIn.tif utStack.tif```  
+For Linux: ```./run_ConnectSkeleton.sh /usr/local/MATLAB//MATLAB_Runtime/v910/ myStackIn.tif outStack.tif```  
 where /usr/local/MATLAB/MATLAB_Runtime/v910 is the path to the Matlab Runtime installed (requirement for Linux only). 
 
 The full list of parameters is given below and must be passed in order as strings:
