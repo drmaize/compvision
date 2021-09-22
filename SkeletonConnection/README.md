@@ -33,4 +33,4 @@ The full list of parameters is given below and must be passed in order as string
 
 
 
-```.\SkeletonConnectCode.exe myStackIn.tif outStack.tif "30" "2" "[1 1 3]" "[100 100 100]"```
+```.\SkeletonConnectCode.exe myStackIn.tif outStack.tif "30" "[1 1 3]" "2" "[100 100 100]"```
