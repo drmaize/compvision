@@ -5,12 +5,13 @@ The Disease Resistance of Maize (DR Maize) project images fungal pathogens in ma
 The DR Maize project has been supported by the U.S. National Science Foundation, Division Of Integrative Organismal Systems (Award No. 1127076) and the US-Israel Binational Agricultural Research and Development Fund, Crop Health Program (Award No. US-5264-20).
 
 # Licensing and Access
-- The DR Maize CV code is released under a GNU GPLv3 open source license.
-- The source code is released on GitHub: https://github.com/drmaize/compvision
-- The dependencies vary for each module and are listed in their respective sections, but in a future update we will release with Docker. 
-- The runable executables and installers are available on GitHub: https://github.com/drmaize/compvision/releases/tag/1.00
-- The deep learning weights and models are also available on GitHub: https://github.com/drmaize/compvision/releases/tag/1.00
-- Fiji ImageJ can be found: https://imagej.net/Fiji/Downloads. MAKE SURE TO DOWNLOAD FIJI (NOT IMAGEJ). THEY ARE SIMILAR BUT THE FUNCTIONALITY IS SLIGHTLY DIFFERENT
+- Source code from the DR Maize project is released on GitHub (https://github.com/drmaize/compvision) under a GNU GPLv3 open source license.
+- Analysis-specific modules are available. The dependencies vary for each module and are listed in their respective sections.
+- Executables and installers are available on GitHub: https://github.com/drmaize/compvision/releases/tag/1.00
+- Deep learning weights and models are also available on GitHub: https://github.com/drmaize/compvision/releases/tag/1.00
+- Multiple modules have been assembled into a pipeline referred to as **DeepXScope 2.0**.
+- Docker containers for self-contained distributions of DeepXScope 2.0 on Windows and Linux OS are now available.  
+- Fiji ImageJ can be found: https://imagej.net/Fiji/Downloads. (**N.B. DeepXScope 2.0 requires the Fiji distribution of ImageJ (NOT IMAGEJ)**)
 
 # Docker Instructions
 As an alternative to downloading and installing the packages into your computer, we have packaged everything together into a Docker image for Windows 10. Note because the image is a Windows image, Hyper-v virtualization must be enabled; Hyper-V is available on 64-bit versions of Windows 10 Pro, Enterprise, and Education. It is not available on the Home edition. 
