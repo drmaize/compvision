@@ -1,4 +1,4 @@
-# Overview of Computer Vision Resources for Dr Maize
+# Overview of Computer Vision Resources for DR Maize
 The Dr. Maize project images fungal pathogens in maize for the purposes of measuring the pathogen behavior and interaction. To this end, many automatic computer vision methods were developed in a pipeline of tasks for this analysis. The CV capabilities include surface estimation, image/stack segmentation (cells, fungi, stomata, spores), skeletonization, and quantitative measurement calculations. These tools are available via source code which is freely downloadable and runnable, or via packaged releases for each component that includes an installer and necessary components to run.
 
 # Licensing and Access
