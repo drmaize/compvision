@@ -5,7 +5,7 @@ The Disease Resistance of Maize (DR Maize) project images fungal pathogens in ma
 The DR Maize project has been supported by the U.S. National Science Foundation, Division Of Integrative Organismal Systems (Award No. 1127076) and the US-Israel Binational Agricultural Research and Development Fund, Crop Health Program (Award No. US-5264-20).
 
 # Licensing and Access
-- Source code from the DR Maize project is released on GitHub (https://github.com/drmaize/compvision) under a GNU GPLv3 open source license.
+- Source code from the DR Maize project is released under a GNU GPLv3 open source license.
 - Analysis-specific modules are available. The dependencies vary for each module and are listed in their respective sections.
 - Executables and installers are available on GitHub: https://github.com/drmaize/compvision/releases/tag/1.00
 - Deep learning weights and models are also available on GitHub: https://github.com/drmaize/compvision/releases/tag/1.00
