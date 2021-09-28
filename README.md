@@ -1,6 +1,9 @@
 # Overview of Computer Vision Resources for DR Maize
 The Disease Resistance of Maize (DR Maize) project images fungal pathogens in maize for the purposes of measuring the pathogen behavior and interaction with its host. To this end, many automatic computer vision methods were developed in a pipeline of tasks for this analysis. The computer vision capabilities include surface estimation, image/stack segmentation (cells, fungi, stomata, spores), skeletonization, and quantitative measurement calculations. These tools are available via source code which is freely downloadable and runnable, or via packaged releases for each component that includes an installer and necessary components to run.
 
+# Funding Support
+The DR Maize project has been supported by the U.S. National Science Foundation, Division Of Integrative Organismal Systems (Award No. 1127076) and the US-Israel Binational Agricultural Research and Development Fund, Crop Health Program (Award No. US-5264-20).
+
 # Licensing and Access
 - The DR Maize CV code is released under a GNU GPLv3 open source license.
 - The source code is released on GitHub: https://github.com/drmaize/compvision
