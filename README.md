@@ -11,7 +11,7 @@ The DR Maize project has been supported by the U.S. National Science Foundation,
 - Deep learning weights and models are available here: https://github.com/drmaize/compvision/releases/tag/1.00
 - Fiji ImageJ can be found: https://imagej.net/Fiji/Downloads. (**N.B. modules require the Fiji distribution of ImageJ (NOT IMAGEJ)**)
 - Multiple modules have been assembled into a pipeline referred to as **DeepXScope 2.0**.
-- **DeepXScope 2.0** is available as Docker containers for self-contained distributions for Windows and Linux OS.  
+- **DeepXScope 2.0** is available as Docker containers for distribution on Windows and Linux OS.  
 
 # Docker Instructions
 As an alternative to downloading and installing the packages into your computer, we have packaged everything together into a Docker image for Windows 10. Note because the image is a Windows image, Hyper-v virtualization must be enabled; Hyper-V is available on 64-bit versions of Windows 10 Pro, Enterprise, and Education. It is not available on the Home edition. 
