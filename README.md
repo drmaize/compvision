@@ -1,17 +1,17 @@
 # Overview of Computer Vision Resources for DR Maize
-The Disease Resistance of Maize (DR Maize) project images fungal pathogens in maize for the purposes of measuring the pathogen behavior and interaction with its host. To this end, many automatic computer vision methods were developed in a pipeline of tasks for this analysis. The computer vision capabilities include surface estimation, image/stack segmentation (cells, fungi, stomata, spores), skeletonization, and quantitative measurement calculations. These tools are available via source code which is freely downloadable and runnable, or via packaged releases for each component that includes an installer and necessary components to run.
+The Disease Resistance of Maize (DR Maize) computer vision project analyzes microscopy data on fungal pathogens in maize for the purposes of measuring the pathogen behavior and interaction with its host. To this end, automatic computer vision methods were developed as a collection of modules for specific functions. This includes leaf surface estimation, image/stack segmentation (cells, fungi, stomata, spores), skeletonization of the mycelium, and quantitative measurement calculations. These tools are available via source code which is freely downloadable and runnable or via packaged releases for each component that includes an installer and necessary components to run. In addition, DeepXScope unites these modules into a pipeline which is disibtruted as Docker containers. 
 
 # Funding Support
 The DR Maize project has been supported by the U.S. National Science Foundation, Division Of Integrative Organismal Systems (Award No. 1127076) and the US-Israel Binational Agricultural Research and Development Fund, Crop Health Program (Award No. US-5264-20).
 
 # Licensing and Access
 - Source code from the DR Maize project is released under a GNU GPLv3 open source license.
-- Analysis-specific modules are available. The dependencies vary for each module and are listed in their respective sections.
-- Executables and installers are available on GitHub: https://github.com/drmaize/compvision/releases/tag/1.00
-- Deep learning weights and models are also available on GitHub: https://github.com/drmaize/compvision/releases/tag/1.00
+- Analysis-specific modules are available in seaprate directories. The dependencies vary for each module and are listed in their respective section.
+- Executables and installers for the modules are available here: https://github.com/drmaize/compvision/releases/tag/1.00
+- Deep learning weights and models are available here: https://github.com/drmaize/compvision/releases/tag/1.00
+- Fiji ImageJ can be found: https://imagej.net/Fiji/Downloads. (**N.B. modules require the Fiji distribution of ImageJ (NOT IMAGEJ)**)
 - Multiple modules have been assembled into a pipeline referred to as **DeepXScope 2.0**.
-- Docker containers for self-contained distributions of DeepXScope 2.0 on Windows and Linux OS are now available.  
-- Fiji ImageJ can be found: https://imagej.net/Fiji/Downloads. (**N.B. DeepXScope 2.0 requires the Fiji distribution of ImageJ (NOT IMAGEJ)**)
+- **DeepXScope 2.0** is available as Docker containers for self-contained distributions for Windows and Linux OS.  
 
 # Docker Instructions
 As an alternative to downloading and installing the packages into your computer, we have packaged everything together into a Docker image for Windows 10. Note because the image is a Windows image, Hyper-v virtualization must be enabled; Hyper-V is available on 64-bit versions of Windows 10 Pro, Enterprise, and Education. It is not available on the Home edition. 
