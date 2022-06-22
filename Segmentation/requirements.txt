@@ -4,7 +4,7 @@
 Keras == 2.0.8
 
 # D:\drmaize\FullSegmentation\SegmentObjects.py: 3
-numpy == 1.19.5
+numpy == 1.22.0
 
 # D:\drmaize\FullSegmentation\SegmentObjects.py: 4
 scikit_image == 0.17.2
