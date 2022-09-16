@@ -59,7 +59,7 @@ With prior steps completed, `chdir` to the source package as the working directo
 $ make
 ```
 
-will kick-off the build of the **Segmenetation** product first, followed by the three Matlab programs.
+will kick-off the build of the **Segmentation** product first, followed by the three Matlab programs.
 
 #### python-virtualenv
 
