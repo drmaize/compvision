@@ -7,12 +7,11 @@ drmaize-compvision:
 
     versions:
         "2022.09.15":
-            description: Matlab 2018b, Python 3.6 virtual env
-            dependencies:
-                - intel-oneapi/2022
-                - mcr/2018b
+            description: Matlab 2018b, Python container
             actions:
-                - action: source
-                  script:
-                      sh: intel-python.sh
+                - variable: SINGULARITY_IMAGE
+                  value: ${VALET_PATH_PREFIX}/libexec/segmentation.sif
+            dependencies:
+                - singularity/default
+                - mcr/2018b
 
