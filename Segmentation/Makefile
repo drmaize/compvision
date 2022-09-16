@@ -1,26 +1,40 @@
 #
-# Setup the Python virtual environment for this program and install a script
-# wrapper that will allow us to execute it.
+# Dispatch the build process to whichever variant is selected
 #
 
 -include ../Makefile.inc
 
-CONTAINER_SIF	= segmentation.sif
-CONTAINER_SDEF	= segmentation.sdef
+ifdef SEGMENTATION_BUILD_VARIANT
 
-all: $(CONTAINER_SIF)
+    ifeq ($(SEGMENTATION_BUILD_VARIANT),singularity-container)
+    
+default:
+	$(MAKE) -C singularity-container
 
-install-container: $(CONTAINER_SIF) $(LIBEXECDIR) $(BINDIR)
-	install "$(CONTAINER_SIF)" "$(LIBEXECDIR)"
-	install SegmentObjects.container "$(BINDIR)/SegmentObjects"
+install:
+	$(MAKE) -C singularity-container install
 
-install-virtualenv:
-	./conda-env-create.sh --prefix "$(PREFIX)"
-	install SegmentObjects.py "$(BINDIR)"
-	install SegmentObjects.virtualenv "$(BINDIR)/SegmentObjects"
+clean:
+	$(MAKE) -C singularity-container clean
 
-$(CONTAINER_SIF): $(CONTAINER_SDEF)
-	singularity build "$(CONTAINER_SIF)" "$(CONTAINER_SDEF)"
+    else ifeq ($(SEGMENTATION_BUILD_VARIANT),python-virtualenv)
+    
+default:
+	$(MAKE) -C python-virtualenv
 
--include ../Makefile.rules.post
+install:
+	$(MAKE) -C python-virtualenv install
 
+clean:
+	$(MAKE) -C python-virtualenv clean
+
+    else
+    
+$(error Unhandled Segmentation build variant "$(SEGMENTATION_BUILD_VARIANT)")
+
+    endif
+else
+
+$(error No Segmentation build variant selected (SEGMENTATION_BUILD_VARIANT not set))
+
+endif

@@ -6,8 +6,8 @@ From: tensorflow/tensorflow:1.15.5-py3
     Segmentation code.
 
 %files
-    SegmentObjects.py /usr/local/bin
-    SegmentObjects.virtualenv /usr/local/bin/SegmentObjects
+    ../SegmentObjects.py /usr/local/bin
+    ../python-virtualenv/SegmentObjects.wrapper /usr/local/bin/SegmentObjects
 
 %post
     pip3 install --upgrade pip

@@ -1,15 +1,15 @@
-#
-# Final rules in the recipe:
-#
+##
+## Default/patterned rules that augment any of the subprojects'
+## Makefile; depends on inclusion of Makefile.inc in the same
+## context.
+##
+
 $(BINDIR):
 	mkdir -p $(BINDIR)
 
-$(SBINDIR):
-	mkdir -p $(SBINDIR)
-
-$(LIBDIR):
-	mkdir -p $(LIBDIR)
-
 $(LIBEXECDIR):
 	mkdir -p $(LIBEXECDIR)
+
+%: %.m
+	mcc -o $@ $(INCLUDES) -R "$(MCR_RUNTIME_FLAGS)" -v -m $^
 
