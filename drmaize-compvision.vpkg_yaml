@@ -1,0 +1,18 @@
+drmaize-compvision:
+    prefix: /work/it_nss/sw/drmaize/compvision
+    url: "https://github.com/drmaize/compvision"
+    description: "Computer vision resources for the DR Maize project"
+
+    default-version: "2022.09.15"
+
+    versions:
+        "2022.09.15":
+            description: Matlab 2018b, Python 3.6 virtual env
+            dependencies:
+                - intel-oneapi/2022
+                - mcr/2018b
+            actions:
+                - action: source
+                  script:
+                      sh: intel-python.sh
+

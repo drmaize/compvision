@@ -1,0 +1,14 @@
+#!/bin/bash
+#
+# Wrapper for execution of SegmentObjects.py in the same directory as this script.
+#
+
+S="$(which singularity)"
+if [ $? -eq 0 ]; then
+    "$S" exec $SINGULARITY_OPTS "$SINGULARITY_IMAGE" SegmentObjects "$@"
+    rc=$?
+else
+    echo "ERROR:  singularity is not loaded into the environment"
+    rc=1
+fi
+exit $rc

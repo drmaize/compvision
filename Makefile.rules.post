@@ -1,0 +1,15 @@
+#
+# Final rules in the recipe:
+#
+$(BINDIR):
+	mkdir -p $(BINDIR)
+
+$(SBINDIR):
+	mkdir -p $(SBINDIR)
+
+$(LIBDIR):
+	mkdir -p $(LIBDIR)
+
+$(LIBEXECDIR):
+	mkdir -p $(LIBEXECDIR)
+
