@@ -8,6 +8,7 @@ import argparse
 import os, sys, errno
 import logging
 from skimage.io import imread as sk_imread, imsave as sk_imsave
+from skimage.util import img_as_bool as sk_img_as_bool, img_as_ubyte as sk_img_as_ubyte, img_as_uint as sk_img_as_uint
 import numpy
 
 def applyThresholdHysteresis(inImage, **kwargs):
@@ -20,36 +21,38 @@ def applyThresholdHysteresis(inImage, **kwargs):
         from skimage.filters import apply_hysteresis_threshold
     except:
         raise RuntimeError('your installed scikit-image does not include apply_hysteresis_threshold (0.14 required)')
-    return inImage * apply_hysteresis_threshold(inImage, float(kwargs['low']), float(kwargs['high']))
+    return apply_hysteresis_threshold(inImage, float(kwargs['low']), float(kwargs['high']))
 
 def applyThresholdMean(inImage, **kwargs):
     """Apply the scikit-image mean threshold filter.  No arguments available."""
     from skimage.filters import threshold_mean
-    return inImage * (inImage > threshold_mean(inImage))
+    return (inImage > threshold_mean(inImage))
 
 def applyThresholdOtsu(inImage, **kwargs):
     """Apply the scikit-image OTSU threshold filter.  No arguments available."""
     from skimage.filters import threshold_otsu
-    return inImage * (inImage > threshold_otsu(inImage))
+    return (inImage > threshold_otsu(inImage))
 
 def applyThresholdMinimum(inImage, **kwargs):
     """Apply the scikit-image minimum threshold filter.  No arguments available."""
     from skimage.filters import threshold_minimum
-    return inImage * (inImage > threshold_minimum(inImage))
+    return (inImage > threshold_minimum(inImage))
 
 def applyThresholdBasic(inImage, **kwargs):
     """Basic filter that maps values below a threshold value to the pixel minimum value, otherwise to the pixel maximum value.  A 'cutoff' argument is required."""
     if 'cutoff' not in kwargs:
         raise RuntimeError('Basic threshold requires a `cutoff` argument')
     repInfo = numpy.iinfo(inImage.dtype)
+    minPixel = inImage.dtype.type(repInfo.min)
+    maxPixel = inImage.dtype.type(repInfo.max)
     if kwargs['cutoff'].endswith('%'):
         pct = 0.01 * float(kwargs['cutoff'][:-1])
         cutoff = inImage.dtype.type(pct * repInfo.max + (1.00 - pct) * repInfo.min)
     else:
         cutoff = inImage.dtype.type(float(kwargs['cutoff']))
-    logging.info('Basic threshold cutoff of %s used', str(cutoff))
+    logging.info('Basic threshold cutoff of %s in range [%s,%s] used', str(cutoff), str(minPixel), str(maxPixel))
     def f(x):
-        return repInfo.min if (x < cutoff) else repInfo.max
+        return (x >= cutoff)
     return numpy.vectorize(f)(inImage)
     
 
@@ -93,7 +96,7 @@ cli_parser.add_argument('--threshold-args', '-T', metavar='key=value{,key=value,
         default='',
         help="""Arguments to the select thresholding method as a comma-separated string of key-value pairs:
 
-basic:         cutoff=<real, required>{%}   with '%' suffix = percent of native type range
+basic:         cutoff=<real, required>{%%}  with '%%' suffix = percent of native type range
 hysteresis:    low=<real, required>, high=<real, required>
 """)
 
@@ -120,6 +123,12 @@ cli_parser.add_argument('--skeletonize-algorithm', '-S', metavar='<algorithm>',
 cli_parser.add_argument('--output', '-o', metavar='<filepath>',
         dest='outImage',
         help='The file to which the final output image will be written')
+cli_parser.add_argument('--output-depth', '-d', metavar='<bitdepth>',
+        dest='outBitDepth',
+        type=int,
+        default=8,
+        choices=(8, 16),
+        help='Bit-depth of the output TIFF image: [8], 16')
 
 cli_args = cli_parser.parse_args()
 
@@ -183,15 +192,15 @@ if not cli_args.shouldSkipThreshold:
 
     try:
         inputImage = thresholdFn(inputImage, **thresholdArgs)
+        logging.debug('Threshold filter `%s` applied', cli_args.thresholdType)
     except Exception as E:
         logging.error('Unable to apply threshold filter `%s`: %s', cli_args.thresholdType, str(E))
         sys.exit(errno.EINVAL)
-    logging.debug('Threshold filter `%s` applied', cli_args.thresholdType)
 
     # If a snapshot is requested, write it out:
     if cli_args.outImagePostThreshold:
         try:
-            sk_imsave(cli_args.outImagePostThreshold, inputImage, plugin='tifffile')
+            sk_imsave(cli_args.outImagePostThreshold, sk_img_as_ubyte(inputImage), plugin='tifffile', check_contrast=False)
             logging.debug('Intermediate post-threshold image `%s` saved', cli_args.outImagePostThreshold)
         except Exception as E:
             logging.error('Failed to save intermediate post-threshold image file `%s`: %s', cli_args.outImagePostThreshold, str(E))
@@ -210,7 +219,7 @@ if not cli_args.shouldSkipMorphologicalOpening:
     # If a snapshot is requested, write it out:
     if cli_args.outImagePostMorphologicalOpening:
         try:
-            sk_imsave(cli_args.outImagePostMorphologicalOpening, inputImage, plugin='tifffile')
+            sk_imsave(cli_args.outImagePostMorphologicalOpening, sk_img_as_ubyte(inputImage), plugin='tifffile', check_contrast=False)
             logging.debug('Intermediate post-morphological opening image `%s` saved', cli_args.outImagePostMorphologicalOpening)
         except Exception as E:
             logging.error('Failed to save intermediate post-morphological opening image file `%s`: %s', cli_args.outImagePostMorphologicalOpening, str(E))
@@ -220,15 +229,17 @@ if not cli_args.shouldSkipSkeletonize:
     # Step 3:  skeletonize the image
     try:
         from skimage.morphology import skeletonize
-        inputImage = skeletonize(inputImage, method=cli_args.skeletonizeAlgorithm)
+        # Skeletonize requires a boolean image:
+        inputImage = skeletonize(sk_img_as_bool(inputImage), method=cli_args.skeletonizeAlgorithm)
     except Exception as E:
         logging.error('Failed to apply skeletonize filter: %s', str(E))
-        sys.exit(EINVAL)
+        sys.exit(errno.EINVAL)
     logging.debug('Skeletonize filter applied')
 
 # Write final image to output file:
+sk_img_as = { 8: sk_img_as_ubyte, 16: sk_img_as_uint }
 try:
-    sk_imsave(cli_args.outImage, inputImage, plugin='tifffile')
+    sk_imsave(cli_args.outImage, sk_img_as[cli_args.outBitDepth](inputImage), plugin='tifffile', check_contrast=False)
     logging.debug('Final image `%s` saved', cli_args.outImage)
 except Exception as E:
     logging.error('Failed to save final image file `%s`: %s', cli_args.outImage, str(E))
