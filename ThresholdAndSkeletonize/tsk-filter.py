@@ -38,6 +38,11 @@ def applyThresholdMinimum(inImage, **kwargs):
     from skimage.filters import threshold_minimum
     return (inImage > threshold_minimum(inImage))
 
+def applyThresholdIsodata(inImage, **kwargs):
+    """Apply the scikit-image ISOData threshold filter.  No arguments available."""
+    from skimage.filters import threshold_isodata
+    return (inImage > threshold_isodata(inImage))
+
 def applyThresholdBasic(inImage, **kwargs):
     """Basic filter that maps values below a threshold value to the pixel minimum value, otherwise to the pixel maximum value.  A 'cutoff' argument is required."""
     if 'cutoff' not in kwargs:
@@ -54,6 +59,44 @@ def applyThresholdBasic(inImage, **kwargs):
     def f(x):
         return (x >= cutoff)
     return numpy.vectorize(f)(inImage)
+    
+
+def applyOpeningGrayscale(inImage, **kwargs):
+    """Apply the scikit-image opening filter.  An optional 'footprint-code' argument is available which should be Python code that generates a local variable named 'footprint'."""
+    if 'footprint-code' in kwargs:
+        localVars = {}
+        exec('import skimage\n' + kwargs['footprint-code'].strip(), {}, localVars)
+        footprint = localVars.get('footprint', None)
+        logging.debug('Grayscale opening with footprint %s', str(footprint))
+    else:
+        footprint = None
+    
+    from skimage.morphology import opening
+    return opening(inImage, footprint=footprint)
+
+def applyOpeningBinary(inImage, **kwargs):
+    """Apply the scikit-image binary opening filter.  An optional 'footprint-code' argument is available which should be Python code that generates an object named 'footprint'."""
+    if 'footprint-code' in kwargs:
+        localVars = {}
+        exec('import skimage\n' + kwargs['footprint-code'].strip(), {}, localVars)
+        footprint = localVars.get('footprint', None)
+        logging.debug('Binary opening with footprint %s', str(footprint))
+    else:
+        footprint = None
+    
+    from skimage.morphology import binary_opening
+    return binary_opening(inImage, footprint=footprint)
+    
+def applyOpeningArea(inImage, **kwargs):
+    """Apply the scikit-image area opening filter.  Optional arguments include 'area_threshold' and 'connectivity' per the API documentation."""
+    area_args = {}
+    if 'area_threshold' in kwargs:
+        area_args['area_threshold'] = int(kwargs['area_threshold'])
+    if 'connectivity' in kwargs:
+        area_args['connectivity'] = int(kwargs['connectivity'])
+    
+    from skimage.morphology import area_opening
+    return area_opening(inImage, **area_args)
     
 
 cli_parser = argparse.ArgumentParser(description='Threshold and SKeletonize a TIFF image stack')
@@ -88,16 +131,15 @@ cli_parser.add_argument('--post-threshold-output', '-1', metavar='<filepath>',
         help='Optional file to which the image should be written after threshold is applied')
 cli_parser.add_argument('--threshold-type', '-t', metavar='<threshold-type>',
         dest='thresholdType',
-        default='mean',
-        choices=('basic', 'mean', 'otsu', 'minimum', 'hysteresis'),
-        help='Type of threshold filter to apply to the input images:  [mean], basic, otsu, minimum, hysteresis')
+        default='isodata',
+        choices=('isodata', 'basic', 'mean', 'otsu', 'minimum', 'hysteresis'),
+        help='Type of threshold filter to apply to the input images:  [isodata], mean, basic, otsu, minimum, hysteresis')
 cli_parser.add_argument('--threshold-args', '-T', metavar='key=value{,key=value,...}',
         dest='thresholdArgsString',
         default='',
-        help="""Arguments to the select thresholding method as a comma-separated string of key-value pairs:
+        help="""Arguments to the selected thresholding method as a comma-separated string of key-value pairs:
 
-basic:         cutoff=<real, required>{%%}  with '%%' suffix = percent of native type range
-hysteresis:    low=<real, required>, high=<real, required>
+basic: cutoff=<integer|real, required>{%%}  with '%%' suffix = percent of native type range | hysteresis: low=<integer, required>, high=<integer, required>
 """)
 
 cli_parser.add_argument('--skip-morphological-opening',
@@ -105,6 +147,18 @@ cli_parser.add_argument('--skip-morphological-opening',
         default=False,
         action='store_true',
         help='Do not apply the morphological opening filter')
+cli_parser.add_argument('--morphological-opening-type', '-m', metavar='<opening-type>',
+        dest='morphologicalOpeningType',
+        default='area',
+        choices=('area', 'grayscale', 'binary'),
+        help='Type of morphological opening filter to apply to the input images:  [area], grayscale, binary')
+cli_parser.add_argument('--morphological-opening-args', '-M', metavar='key=value{,key=value,...}',
+        dest='morphologicalOpeningArgsString',
+        default='',
+        help="""Arguments to the selected morphological opening method as a comma-separated string of key-value pairs:
+
+grayscale, binary: footprint-code=<code> | area: area_threshold=<integer, optional>, connectivity=<integer, optional>
+""")
 cli_parser.add_argument('--post-morphological-opening-output', '-2', metavar='<filepath>',
         dest='outImagePostMorphologicalOpening',
         help='Optional file to which the image should be written after morophological opening is applied')
@@ -116,9 +170,9 @@ cli_parser.add_argument('--skip-skeletonize',
         help='Do not apply the skeletonize filter')
 cli_parser.add_argument('--skeletonize-algorithm', '-S', metavar='<algorithm>',
         dest='skeletonizeAlgorithm',
-        default=None,
+        default='lee',
         choices=('zhang', 'lee'),
-        help='The skeletonize algorithm to use:  [zhang], lee')
+        help='The skeletonize algorithm to use:  [lee], zhang')
         
 cli_parser.add_argument('--output', '-o', metavar='<filepath>',
         dest='outImage',
@@ -208,13 +262,29 @@ if not cli_args.shouldSkipThreshold:
 
 if not cli_args.shouldSkipMorphologicalOpening:
     # Step 2:  perform "opening" morphology filter on the frames:
+    fnName = 'applyOpening' + cli_args.morphologicalOpeningType.capitalize()
+    import __main__
+    morphologicalOpeningFn = getattr(__main__, fnName)
+    logging.debug('Found morphological opening function %s', fnName)
+
+    # Attempt to parse any threshold arguments:
+    if cli_args.morphologicalOpeningArgsString:
+        try:
+            morphologicalOpeningArgs = { parsedKey: parsedValue for (parsedKey, parsedValue) in
+                                [ parsedKeyPair.split('=', 1) for parsedKeyPair in cli_args.morphologicalOpeningArgsString.split(',') ]
+                            }
+        except Exception as E:
+            logging.error('Unable to parse morphological opening argument string `%s`: %s', cli_args.morphologicalOpeningArgsString, str(E))
+            sys.exit(errno.EINVAL)
+    else:
+        morphologicalOpeningArgs = {}
+        
     try:
-        from skimage.morphology import opening as sk_opening
-        inputImage = sk_opening(inputImage)
+        inputImage = morphologicalOpeningFn(inputImage, **morphologicalOpeningArgs)
+        logging.debug('Morphological opening filter applied')
     except Exception as E:
-        logging.error('Failed to apply skeletonize filter: %s', str(E))
-        sys.exit(EINVAL)
-    logging.debug('Morphological opening filter applied')
+        logging.error('Failed to apply morphological opening filter: %s', str(E))
+        sys.exit(errno.EINVAL)
 
     # If a snapshot is requested, write it out:
     if cli_args.outImagePostMorphologicalOpening:
