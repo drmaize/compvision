@@ -68,6 +68,9 @@ def applyOpeningGrayscale(inImage, **kwargs):
         exec('import skimage\n' + kwargs['footprint-code'].strip(), {}, localVars)
         footprint = localVars.get('footprint', None)
         logging.debug('Grayscale opening with footprint %s', str(footprint))
+        if footprint is not None and inImage.ndim > 2:
+            footprint = numpy.repeat(footprint[numpy.newaxis,:,:], 3, axis=0)
+            logging.debug('Stacked footprint generated')
     else:
         footprint = None
     
@@ -81,6 +84,9 @@ def applyOpeningBinary(inImage, **kwargs):
         exec('import skimage\n' + kwargs['footprint-code'].strip(), {}, localVars)
         footprint = localVars.get('footprint', None)
         logging.debug('Binary opening with footprint %s', str(footprint))
+        if footprint is not None and inImage.ndim > 2:
+            footprint = numpy.repeat(footprint[numpy.newaxis,:,:], 3, axis=0)
+            logging.debug('Stacked footprint generated')
     else:
         footprint = None
     
@@ -202,6 +208,7 @@ logging.debug('Input file `%s` exists', cli_args.inImage)
 try:
     inputImage = sk_imread(cli_args.inImage, plugin='tifffile')
     logging.debug('Image read from input file `%s`', cli_args.inImage)
+    inputFrameCount = 1 if inputImage.ndim < 3 else inputImage.shape[0]
 except Exception as E:
     logging.error('ERROR:  unable to read image file `%s`: %s', cli_args.inImage, str(E))
     sys.exit(errno.EINVAL)
@@ -209,14 +216,14 @@ except Exception as E:
 if cli_args.shouldShowInputInfoOnly:
     # Only summarize the input image then exit:
     sys.stdout.write('Input image:  width x height = {:d} x {:d}\n'.format(inputImage.shape[-2], inputImage.shape[-1]))
-    sys.stdout.write('Input image:  frame count = {:d}\n'.format(1 if inputImage.ndim < 3 else inputImage.shape[0]))
+    sys.stdout.write('Input image:  frame count = {:d}\n'.format(inputFrameCount))
     sys.stdout.write('Input image:  pixel type = {:s} ({:d} byte{:s})\n'.format(str(inputImage.dtype), inputImage.itemsize, '' if (inputImage.itemsize == 1) else 's'))
     sys.stdout.write('Input image:  pixel value range: [{:s}, {:s}]\n'.format(str(inputImage.min()), str(inputImage.max())))
     sys.exit(0)
 
 # Summarize the input image if necessary:
 logging.info('Input image:  width x height = %d x %d', inputImage.shape[-2], inputImage.shape[-1])
-logging.info('Input image:  frame count = %d', 1 if inputImage.ndim < 3 else inputImage.shape[0])
+logging.info('Input image:  frame count = %d', inputFrameCount)
 logging.info('Input image:  pixel type = %s (%d byte%s)', str(inputImage.dtype), inputImage.itemsize, '' if (inputImage.itemsize == 1) else 's')
 logging.info('Input image:  pixel value range: [%s, %s]', str(inputImage.min()), str(inputImage.max()))
 
@@ -279,12 +286,12 @@ if not cli_args.shouldSkipMorphologicalOpening:
     else:
         morphologicalOpeningArgs = {}
         
-    try:
-        inputImage = morphologicalOpeningFn(inputImage, **morphologicalOpeningArgs)
-        logging.debug('Morphological opening filter applied')
-    except Exception as E:
-        logging.error('Failed to apply morphological opening filter: %s', str(E))
-        sys.exit(errno.EINVAL)
+    #try:
+    inputImage = morphologicalOpeningFn(inputImage, **morphologicalOpeningArgs)
+    logging.debug('Morphological opening filter applied')
+    #except Exception as E:
+    #    logging.error('Failed to apply morphological opening filter: %s', str(E))
+    #    sys.exit(errno.EINVAL)
 
     # If a snapshot is requested, write it out:
     if cli_args.outImagePostMorphologicalOpening:
