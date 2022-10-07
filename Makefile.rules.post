@@ -4,6 +4,9 @@
 ## context.
 ##
 
+$(PREFIX):
+	mkdir -p $(PREFIX)
+
 $(BINDIR):
 	mkdir -p $(BINDIR)
 
