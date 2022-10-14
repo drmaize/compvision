@@ -7,6 +7,7 @@
 import argparse
 import os, sys, errno
 import logging
+from tifffile import TiffFile
 from skimage.io import imread as sk_imread, imsave as sk_imsave
 from skimage.util import img_as_bool as sk_img_as_bool, img_as_ubyte as sk_img_as_ubyte, img_as_uint as sk_img_as_uint
 import numpy
@@ -206,7 +207,9 @@ logging.debug('Input file `%s` exists', cli_args.inImage)
 
 # Try to load the image:
 try:
-    inputImage = sk_imread(cli_args.inImage, plugin='tifffile')
+    tiffInfo = TiffFile(cli_args.inImage)
+    inputImage = sk_imread(cli_args.inImage, plugin='tifffile', key=range(len(tiffInfo.pages)))
+    del tiffInfo
     logging.debug('Image read from input file `%s`', cli_args.inImage)
     inputFrameCount = 1 if inputImage.ndim < 3 else inputImage.shape[0]
 except Exception as E:
