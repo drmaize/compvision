@@ -6,9 +6,11 @@ The macro is constructed on-the-fly and executed by the [imagej-filter](./imagej
 
 ## Installation
 
-When `make` is executed without a target in this directory, the default recipe simply downloads the latest release of Fiji for Linux.  The product is a .zip file in this directory.
+When `make -f Makefile.imagej` is executed without a target in this directory, the default recipe simply downloads the latest release of Fiji for Linux.  The product is a .zip file in this directory.
 
-When `make install` is executed, the .zip file is unpacked within the installation prefix directory ($PREFIX).  A symbolic link to the "ImageJ-linux64" executable inside the installed application is created in the installation binary directory ($BINDIR) and the [imagej-filter](./imagej-filter) script is also copied to $BINDIR.  When $BINDIR is added to the PATH, both programs become available without entering a full path.
+When `make -f Makefile.imagej install` is executed, the .zip file is unpacked within the installation prefix directory ($PREFIX).  A symbolic link to the "ImageJ-linux64" executable inside the installed application is created in the installation binary directory ($BINDIR) and the [imagej-filter](./imagej-filter) script is also copied to $BINDIR.  When $BINDIR is added to the PATH, both programs become available without entering a full path.
+
+**Do not forget** to provide a value for $PREFIX either in the top level [Makefile.inc](../Makefile.inc), in the `make -f Makefile.imagej PREFIX=<path> …` command, or in the environment.
 
 ## Usage
 

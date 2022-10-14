@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # tsk-filter.py
 # Threshold and SKeletonize filter.  This Python script makes exclusive use of the
@@ -7,6 +8,7 @@
 import argparse
 import os, sys, errno
 import logging
+from time import perf_counter_ns
 from tifffile import TiffFile
 from skimage.io import imread as sk_imread, imsave as sk_imsave
 from skimage.util import img_as_bool as sk_img_as_bool, img_as_ubyte as sk_img_as_ubyte, img_as_uint as sk_img_as_uint
@@ -208,7 +210,9 @@ logging.debug('Input file `%s` exists', cli_args.inImage)
 # Try to load the image:
 try:
     tiffInfo = TiffFile(cli_args.inImage)
-    inputImage = sk_imread(cli_args.inImage, plugin='tifffile', key=range(len(tiffInfo.pages)))
+    tiffPageCount = len(tiffInfo.pages)
+    tiffSeriesCount = len(tiffInfo.series)
+    inputImage = sk_imread(cli_args.inImage, plugin='tifffile', key=range(tiffPageCount))
     del tiffInfo
     logging.debug('Image read from input file `%s`', cli_args.inImage)
     inputFrameCount = 1 if inputImage.ndim < 3 else inputImage.shape[0]
@@ -219,6 +223,7 @@ except Exception as E:
 if cli_args.shouldShowInputInfoOnly:
     # Only summarize the input image then exit:
     sys.stdout.write('Input image:  width x height = {:d} x {:d}\n'.format(inputImage.shape[-2], inputImage.shape[-1]))
+    sys.stdout.write('Input image:  page x series = {:d} x {:d}\n'.format(tiffPageCount, tiffSeriesCount))
     sys.stdout.write('Input image:  frame count = {:d}\n'.format(inputFrameCount))
     sys.stdout.write('Input image:  pixel type = {:s} ({:d} byte{:s})\n'.format(str(inputImage.dtype), inputImage.itemsize, '' if (inputImage.itemsize == 1) else 's'))
     sys.stdout.write('Input image:  pixel value range: [{:s}, {:s}]\n'.format(str(inputImage.min()), str(inputImage.max())))
@@ -226,6 +231,7 @@ if cli_args.shouldShowInputInfoOnly:
 
 # Summarize the input image if necessary:
 logging.info('Input image:  width x height = %d x %d', inputImage.shape[-2], inputImage.shape[-1])
+logging.info('Input image:  page x series = %d x %d', tiffPageCount, tiffSeriesCount)
 logging.info('Input image:  frame count = %d', inputFrameCount)
 logging.info('Input image:  pixel type = %s (%d byte%s)', str(inputImage.dtype), inputImage.itemsize, '' if (inputImage.itemsize == 1) else 's')
 logging.info('Input image:  pixel value range: [%s, %s]', str(inputImage.min()), str(inputImage.max()))
@@ -255,11 +261,14 @@ if not cli_args.shouldSkipThreshold:
         thresholdArgs = {}
 
     try:
+        t0 = perf_counter_ns()
         inputImage = thresholdFn(inputImage, **thresholdArgs)
-        logging.debug('Threshold filter `%s` applied', cli_args.thresholdType)
+        t1 = perf_counter_ns()
     except Exception as E:
         logging.error('Unable to apply threshold filter `%s`: %s', cli_args.thresholdType, str(E))
         sys.exit(errno.EINVAL)
+    dt = (t1 - t0) * 1e-9
+    logging.debug('Threshold filter `%s` applied in %.3f seconds', cli_args.thresholdType, dt)
 
     # If a snapshot is requested, write it out:
     if cli_args.outImagePostThreshold:
@@ -289,12 +298,15 @@ if not cli_args.shouldSkipMorphologicalOpening:
     else:
         morphologicalOpeningArgs = {}
         
-    #try:
-    inputImage = morphologicalOpeningFn(inputImage, **morphologicalOpeningArgs)
-    logging.debug('Morphological opening filter applied')
-    #except Exception as E:
-    #    logging.error('Failed to apply morphological opening filter: %s', str(E))
-    #    sys.exit(errno.EINVAL)
+    try:
+        t0 = perf_counter_ns()
+        inputImage = morphologicalOpeningFn(inputImage, **morphologicalOpeningArgs)
+        t1 = perf_counter_ns()
+    except Exception as E:
+        logging.error('Failed to apply morphological opening filter: %s', str(E))
+        sys.exit(errno.EINVAL)
+    dt = (t1 - t0) * 1e-9
+    logging.debug('Morphological opening filter `%s` applied in %.3f seconds', cli_args.morphologicalOpeningType, dt)
 
     # If a snapshot is requested, write it out:
     if cli_args.outImagePostMorphologicalOpening:
@@ -310,11 +322,14 @@ if not cli_args.shouldSkipSkeletonize:
     try:
         from skimage.morphology import skeletonize
         # Skeletonize requires a boolean image:
+        t0 = perf_counter_ns()
         inputImage = skeletonize(sk_img_as_bool(inputImage), method=cli_args.skeletonizeAlgorithm)
+        t1 = perf_counter_ns()
     except Exception as E:
         logging.error('Failed to apply skeletonize filter: %s', str(E))
         sys.exit(errno.EINVAL)
-    logging.debug('Skeletonize filter applied')
+    dt = (t1 - t0) * 1e-9
+    logging.debug('Skeletonize filter `%s` applied in %.3f seconds', cli_args.skeletonizeAlgorithm, dt)
 
 # Write final image to output file:
 sk_img_as = { 8: sk_img_as_ubyte, 16: sk_img_as_uint }

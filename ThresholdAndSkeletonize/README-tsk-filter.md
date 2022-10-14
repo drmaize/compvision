@@ -2,19 +2,11 @@
 
 The Windows Fiji scripts in this directory were used to construct a Python program that applies (hopefully!) the same transformations to a TIFF image (containing one or more layers, a *stack*).
 
-## Prerequisites
+## Installation
 
-The script makes use of the **scikit-image** package for Python, which in turn relies on **numpy** and several other large packages.  Version 0.19 or better is suggested for **scikit-image**.
+When `make -f Makefile.tsk install` is executed, a Python virtual environment is created in the $PREFIX/tsk-venv directory (if the directory is not present) using the `conda` command.  The virtual environment includes the scikit-image package as well as all its dependencies.  The [tsk-filter.py](./tsk-filter.py) script is also copied to $BINDIR.  When $BINDIR is added to the PATH, the program becomes available without entering a full path.
 
-On the Caviness cluster these dependencies were satisfied using an Anaconda virtual environment:
-
-```
-$ vpkg_require intel-oneapi/2022
-$ mkdir -p "${WORKDIR}/sw/venv/scikit-image"
-$ conda create --prefix="${WORKDIR}/sw/venv/scikit-image/0.19.2" scikit-image=0.19.2
-   :
-$ conda activate "${WORKDIR}/sw/venv/scikit-image/0.19.2"
-```
+**Do not forget** to provide a value for $PREFIX either in the top level [Makefile.inc](../Makefile.inc), in the `make -f Makefile.tsk PREFIX=<path> …` command, or in the environment.
 
 ## Usage
 

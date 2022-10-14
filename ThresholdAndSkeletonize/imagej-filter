@@ -18,6 +18,9 @@ VERBOSE=0
 # TIFF input file:
 INPUT_FILE=""
 
+# Maximum thread count:
+MAX_THREAD_COUNT=${OMP_THREAD_LIMIT:-${SLURM_CPUS_ON_NODE:-1}}
+
 # Threshold options:
 DISABLE_THRESHOLD=0
 THRESHOLD_METHOD="default"
@@ -58,6 +61,9 @@ usage:
     
     -i/--input <filepath>               read the input image from this TIFF file
     -o/--output <filepath>              write the filtered image to this TIFF file
+    
+    -T/--max-threads #                  limit ImageJ to this many computational
+                                        threads
     
     -d/--save-macro-file                by default the macro file is deleted if the
                                         run is successful; use this flag to retain
@@ -116,9 +122,10 @@ args = split(getArgument()," ");
 open(args[0]);
 EOT
     [ $VERBOSE -ne 0 ] && echo "print(\"IMAGEJ: Read initial image from ${EXEC_ARG_LIST[0]}\");"
-    
+    [ $VERBOSE -ne 0 ] && echo "print(\"IMAGEJ: Configuring for $MAX_THREAD_COUNT threads\");"
+    echo "run(\"Memory & Threads...\", \"parallel=$MAX_THREAD_COUNT\");"
     if [ $DISABLE_THRESHOLD -eq 0 ]; then
-        [ $VERBOSE -ne 0 ] && echo "print(\"IMAGEJ: Applying threshold filter $THRESHOLD_METHOD\");"
+        [ $VERBOSE -ne 0 ] && printf "print(\"IMAGEJ: Applying threshold filter $THRESHOLD_METHOD\");\nt0 = getTime();\n"
         case "$THRESHOLD_METHOD" in
             default)
                 echo 'run("Make Binary", "method=Default background=Default calculate black");'
@@ -139,6 +146,7 @@ EOT
                 echo 'run("Auto Local Threshold", "method=Otsu radius=15 parameter_1=0 parameter_2=0 white");'
                 ;;
         esac
+        [ $VERBOSE -ne 0 ] && printf "dt = getTime() - t0;\nprint(\"IMAGEJ: completed in \",dt * 1e-3,\" seconds\");\n"
         if [ -n "$THRESHOLD_OUTPUT_FILE" ]; then
             [ $VERBOSE -ne 0 ] && echo "print(\"IMAGEJ: Saving threshold output to $THRESHOLD_OUTPUT_FILE\");"
             echo "saveAs(\"Tiff\", \"$THRESHOLD_OUTPUT_FILE\");"
@@ -146,8 +154,9 @@ EOT
     fi
     
     if [ $DISABLE_OPENING -eq 0 ]; then
-        [ $VERBOSE -ne 0 ] && echo "print(\"IMAGEJ: Applying morphological opening filter\");"
+        [ $VERBOSE -ne 0 ] && printf "print(\"IMAGEJ: Applying morphological opening filter\");\nt0 = getTime();\n"
         echo "run(\"Open\", \"stack\");"
+        [ $VERBOSE -ne 0 ] && printf "dt = getTime() - t0;\nprint(\"IMAGEJ: completed in \",dt * 1e-3,\" seconds\");\n"
         if [ -n "$OPENING_OUTPUT_FILE" ]; then
             [ $VERBOSE -ne 0 ] && echo "print(\"IMAGEJ: Saving morphological opening output to $OPENING_OUTPUT_FILE\");"
             echo "saveAs(\"Tiff\", \"$OPENING_OUTPUT_FILE\");"
@@ -155,10 +164,11 @@ EOT
     fi
     
     if [ $DISABLE_SKELETONIZE -eq 0 ]; then
-        [ $VERBOSE -ne 0 ] && echo "print(\"IMAGEJ: Forcing to 8-bit pixel format\");"
+        [ $VERBOSE -ne 0 ] && printf "print(\"IMAGEJ: Forcing to 8-bit pixel format\");\nt0 = getTime();\n"
         echo "run(\"8-bit\");"
         [ $VERBOSE -ne 0 ] && echo "print(\"IMAGEJ: Applying skeletonize filter\");"
         echo "run(\"Skeletonize (2D/3D)\");"
+        [ $VERBOSE -ne 0 ] && printf "dt = getTime() - t0;\nprint(\"IMAGEJ: completed in \",dt * 1e-3,\" seconds\");\n"
     fi
     
     [ $VERBOSE -ne 0 ] && echo "print(\"IMAGEJ: Saving final output to ${EXEC_ARG_LIST[1]}\");"
