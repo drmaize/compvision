@@ -12,6 +12,8 @@ TARGET			= QuantifyPhenotypes
 # line:
 SOURCE			= QuantifyPhenotypes.m
 
+INCLUDES		= -I Skel2Graph3D
+
 # What runtime options should be used for the compiled
 # Matlab code?
 #
