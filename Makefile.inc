@@ -1,0 +1,19 @@
+##
+## Variables used by all subprojects' Makefiles.  All but the
+## SOURCE_DIR can be overridden by setting an environment variable
+## of the same name before running the "make" command.
+##
+
+# In what directory does this source code reside:
+SOURCE_DIR	:= $(dir $(abspath $(firstword $(MAKEFILE_LIST))))
+
+# Default installation root is the parent directory of the source code:
+PREFIX		?= $(abspath $(SOURCE_DIR)/..)
+
+# Other directories under the installation root:
+BINDIR		?= $(PREFIX)/bin
+LIBEXECDIR	?= $(PREFIX)/libexec
+
+# The default Segmentation build variant:
+SEGMENTATION_BUILD_VARIANT ?= singularity-container
+

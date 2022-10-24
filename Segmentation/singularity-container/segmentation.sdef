@@ -1,0 +1,16 @@
+Bootstrap: docker
+From: tensorflow/tensorflow:1.15.5-py3
+
+%help
+    This container includes a Python 3 environment suitable for the
+    Segmentation code.
+
+%files
+    ../SegmentObjects.py /usr/local/bin
+    ../python-virtualenv/SegmentObjects.wrapper /usr/local/bin/SegmentObjects
+
+%post
+    pip3 install --upgrade pip
+    pip3 install --prefer-binary keras==2.0.8 scikit_image tifffile
+    pip3 install --upgrade numpy==1.19.5
+

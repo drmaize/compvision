@@ -1,0 +1,12 @@
+#!/bin/bash
+#
+# Wrapper for execution of SegmentObjects.py in the same directory as this script.
+#
+
+BASEDIR="$(dirname "$(realpath "$BASH_SOURCE")")"
+if [ ! -f "${BASEDIR}/SegmentObjects.py" ]; then
+    echo "ERROR:  ${BASEDIR}/SegmentObjects.py not found"
+    exit 1
+fi
+exec python3 "${BASEDIR}/SegmentObjects.py" "$@"
+

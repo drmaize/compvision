@@ -1,0 +1,18 @@
+##
+## Default/patterned rules that augment any of the subprojects'
+## Makefile; depends on inclusion of Makefile.inc in the same
+## context.
+##
+
+$(PREFIX):
+	mkdir -p $(PREFIX)
+
+$(BINDIR):
+	mkdir -p $(BINDIR)
+
+$(LIBEXECDIR):
+	mkdir -p $(LIBEXECDIR)
+
+%: %.m
+	mcc -o $@ $(INCLUDES) -R "$(MCR_RUNTIME_FLAGS)" -v -m $^
+

@@ -88,9 +88,9 @@ for ii = 1:length(CC.PixelIdxList)
         min_r = max(1, round(min(r)-size(fungus_seg,1)/20));
         max_r = min(size(fungus_seg,1), round(max(r)+size(fungus_seg,1)/20));
         min_c = max(1, round(min(c)-size(fungus_seg,2)/20));
-        max_c = min(size(fungus_seg,1), round(max(c)+size(fungus_seg,2)/20));
+        max_c = min(size(fungus_seg,2), round(max(c)+size(fungus_seg,2)/20));
         min_z = max(1, round(min(z)-size(fungus_seg,3)/20));
-        max_z = min(size(fungus_seg,1), round(max(z)+size(fungus_seg,3)/20));
+        max_z = min(size(fungus_seg,3), round(max(z)+size(fungus_seg,3)/20));
         fungus_seg_tmp(min_r:max_r, min_c:max_c, min_z:max_z) = fungus_seg(min_r:max_r, min_c:max_c, min_z:max_z);
         
         %Calculate MIP area of the segmented,non-skeleton fungus
