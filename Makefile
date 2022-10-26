@@ -22,3 +22,5 @@ install: $(PREFIX)
 	$(MAKE) -C SkeletonConnection install
 	$(MAKE) -C SurfaceEstimation install
 	$(MAKE) -C ThresholdAndSkeletonize install
+
+include Makefile.rules.post

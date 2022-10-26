@@ -21,7 +21,7 @@ BASH_SCRIPT	= imagej-filter
 
 default: $(SOURCE_ZIP)
 
--include ../Makefile.inc
+-include ../../Makefile.inc
 
 $(SOURCE_ZIP):
 	curl -k --output $(SOURCE_ZIP) $(SOURCE_URL)
@@ -39,5 +39,5 @@ $(PREFIX)/$(APPLICATION): $(SOURCE_ZIP) $(PREFIX)
 	rm -f $(BINDIR)/ImageJ-linux64
 	ln --relative -s $(PREFIX)/$(APPLICATION)/ImageJ-linux64 $(BINDIR)/ImageJ-linux64
 
--include ../Makefile.rules.post
+-include ../../Makefile.rules.post
 

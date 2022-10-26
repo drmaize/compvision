@@ -24,11 +24,19 @@ $ export PREFIX="/opt/shared/drmaize/compvision/2022.09.15"
 
 in the environment so that the build system knows where the programs are destined to be installed.
 
-The R2018b MCR and Singularity software must be available in the environment.  On our HPC clusters, this is accomplished using VALET:
+As a base requirement the R2018b MCR software must be available in the environment.  On our HPC clusters, this is accomplished using VALET:
 
 ```
-$ vpkg_require singularity/default mcr/r2018b
+$ vpkg_require mcr/r2018b
 ```
+
+Depending which build variants you choose for the **Segmentation** and **ThresholdAndSkeletonize** subprojects, additional software may be needed in the runtime environment:
+
+- For Python virtualenv usage in either, add either an Anaconda or Intel Python packge to the environment:
+    - `vpkg_require anaconda/2022.05`  or  `vpkg_require intel-oneapi/2022`
+- For Singularity container usage, add
+    - `vpkg_require singularity/default`
+
 
 ## Prepare the Makefile.inc
 
@@ -40,6 +48,8 @@ The top level of this source package includes a file named [Makefile.inc](./Make
 | `BINDIR` | The directory to which user-accessible executables will be installed | the `bin` directory under `PREFIX` |
 | `LIBEXECDIR` | The directory to which supporting executables and other binary pieces will be installed | the `libexec` directory under `PREFIX` |
 | `SEGMENTATION_BUILD_VARIANT` | The **Segmentation** subproject can be built as a `python-virtualenv` or a `singularity-container` | `singularity-container` |
+| `SEGMENTATION_CONTAINER_ACTION` | The **Segmentation** `singularity-container` subproject can either download a pre-built container from the Sylabs cloud or build the container from scratch (root privileges required for the latter) | `download` |
+| `THRESHOLD_AND_SKELETONIZE_BUILD_VARIANT` | The **ThresholdAndSkeletonize** subproject can be delivered either as a Python `Scikit-Image` script or a Bash script that uses Fiji `ImageJ` | `ImageJ` |
 
 The default value for each of these variables only applies when the shell environment (from which `make` was executed) lacks a variable of that name and a NAME=VALUE was not provided as an argument to the `make` command.  E.g. with a shell environment lacking all the variables
 
@@ -48,6 +58,7 @@ $ make PREFIX=/usr/local install
 ```
 
 will install executables to `/usr/local/bin` and the Singularity container to `/usr/local/libexec`.
+
 
 ## Build/Install
 
@@ -59,7 +70,7 @@ With prior steps completed, `chdir` to the source package as the working directo
 $ make
 ```
 
-will kick-off the build of the **Segmentation** product first, followed by the three Matlab programs.
+will kick-off the build of the **Segmentation** product first, followed by the three Matlab programs and finishing with the **ThresholdAndSkeletonize** product.
 
 #### python-virtualenv
 
@@ -67,7 +78,7 @@ The `conda`-based Python variant includes no compilation phase (just installatio
 
 #### singularity-container
 
-Singularity requires root privileges to build a container image from a definition file.  If the current user is not root, then `sudo` is used to execute the container build as root.  Otherwise, it is executed directly.
+Singularity requires root privileges to build a container image from a definition file.  If `SEGMENTATION_CONTAINER_ACTION` is set to `build` and the current user is not root, then `sudo` is used to execute the container build as root.
 
 ### Install
 
@@ -86,22 +97,25 @@ $ make install
 When completed successfully, the `PREFIX` directory is populated thusly:
 
 ```
-$ ls -lR /opt/shared/drmaize/compvision/2022.09.15
+$ ls -l /opt/shared/drmaize/compvision/2022.09.15
 /opt/shared/drmaize/compvision/2022.09.15:
-total 17
-drwxr-sr-x 2 frey swmgr 6 Sep 15 23:40 bin
-drwxr-sr-x 2 frey swmgr 3 Sep 15 23:40 libexec
+total 34
+drwxr-sr-x  2 frey swmgr  8 Oct 26 11:45 bin
+drwxr-sr-x 13 frey swmgr 17 Oct 26 11:45 Fiji.app
+drwxr-sr-x  2 frey swmgr  3 Oct 26 11:45 libexec
 
 /opt/shared/drmaize/compvision/2022.09.15/bin:
-total 575162
--rwxr-xr-x 1 frey swmgr  27292208 Sep 15 23:40 ConnectSkeleton
--rwxr-xr-x 1 frey swmgr 281595742 Sep 15 23:40 QuantifyPhenotypes
--rwxr-xr-x 1 frey swmgr       322 Sep 15 23:40 SegmentObjects
--rwxr-xr-x 1 frey swmgr 281255927 Sep 15 23:40 SurfaceEstimation
+total 576355
+-rwxr-xr-x 1 frey swmgr  27681229 Oct 26 11:45 ConnectSkeleton
+-rwxr-xr-x 1 frey swmgr     14233 Oct 26 11:45 imagej-filter
+lrwxrwxrwx 1 frey swmgr        26 Oct 26 11:45 ImageJ-linux64 -> ../Fiji.app/ImageJ-linux64
+-rwxr-xr-x 1 frey swmgr 281990576 Oct 26 11:45 QuantifyPhenotypes
+-rwxr-xr-x 1 frey swmgr       322 Oct 26 11:45 SegmentObjects
+-rwxr-xr-x 1 frey swmgr 281645174 Oct 26 11:45 SurfaceEstimation
 
 /opt/shared/drmaize/compvision/2022.09.15/libexec:
-total 640185
--rwxr-xr-x 1 frey swmgr 655601664 Sep 15 23:40 segmentation.sif
+total 640193
+-rwxr-xr-x 1 frey swmgr 655611653 Oct 26 11:45 segmentation.sif
 ```
 
 ## Usage
@@ -118,7 +132,10 @@ drmaize-compvision:
 
     versions:
         "2022.09.15":
-            description: Matlab 2018b, Python container
+            description: development build from v1.0.0 source
+            attributes:
+                Segmentation: Singularity container
+                ThresholdAndSkeletonize: Bash wrapper to ImageJ
             actions:
                 - variable: SINGULARITY_IMAGE
                   value: ${VALET_PATH_PREFIX}/libexec/segmentation.sif
@@ -126,6 +143,8 @@ drmaize-compvision:
                 - singularity/default
                 - mcr/2018b
 ```
+
+If you choose the Python virtualenv option for either the **Segmentation** or **ThresholdAndSkeletonize** 
 
 To make use of the software, the runtime environment is configured simply with
 

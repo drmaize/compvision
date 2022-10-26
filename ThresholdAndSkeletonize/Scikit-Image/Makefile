@@ -4,9 +4,6 @@
 ##
 
 TSK_SCRIPT = tsk-filter.py
-
-VIRTUALENV = tsk-venv
-
 CONDA_ARGS = --channel intel
 
 ##
@@ -16,7 +13,13 @@ CONDA_ARGS = --channel intel
 
 default:
 
--include ../Makefile.inc
+-include ../../Makefile.inc
+
+ifeq ($(SEGMENTATION_BUILD_VARIANT),python-virtualenv)
+    VIRTUALENV = $(PREFIX)
+else
+    VIRTUALENV = $(PREFIX)/tsk-venv
+endif
 
 clean::
 
@@ -26,7 +29,7 @@ $(BINDIR)/$(TSK_SCRIPT): $(TSK_SCRIPT) $(BINDIR)
 	install --mode=0755 $(TSK_SCRIPT) $(BINDIR)
 
 $(PREFIX)/$(VIRTUALENV):
-	conda create --prefix="$(PREFIX)/$(VIRTUALENV)" $(CONDA_ARGS) scikit-image=0.19.2
+	conda create --prefix="$(VIRTUALENV)" $(CONDA_ARGS) scikit-image=0.19.2
 
--include ../Makefile.rules.post
+-include ../../Makefile.rules.post
 

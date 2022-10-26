@@ -55,8 +55,6 @@ if [ -z "$PREFIX" ]; then
     exit 1
 fi
 
-vpkg_require intel-oneapi/2022
-
 # Attempt to activate it first -- if it works, then we don't need to do this again
 if [ $FORCE_INSTALL -eq 0 ]; then
     conda activate "$PREFIX" >/dev/null 2>&1
