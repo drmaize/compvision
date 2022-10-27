@@ -17,3 +17,9 @@ LIBEXECDIR	?= $(PREFIX)/libexec
 # The default Segmentation build variant:
 SEGMENTATION_BUILD_VARIANT ?= singularity-container
 
+# Should we "build" or "download" the container (if selected)?
+SEGMENTATION_CONTAINER_ACTION ?= download
+
+# The ThresholdAndSkeletonize build variant, "ImageJ" or "Scikit-Image"
+THRESHOLD_AND_SKELETONIZE_BUILD_VARIANT ?= ImageJ
+
