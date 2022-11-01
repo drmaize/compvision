@@ -149,19 +149,19 @@ end
 %Output visualization
 if(~isempty(skeleton) && ~isempty(surface_map) && ~isempty(stomates_image) && ~isempty(cells_image) && ~isempty(outfile_visualization))
    combined_image = cells_image_colored + stomates_image_colored + surface_image_colored ;
-   combined_image = insertObjectAnnotation(combined_image,'circle',[c_pen r_pen repmat(25, [length(r_pen) 1])], repmat('', [length(r_pen) 1]), 'LineWidth', 5, 'Color', 'red');
+   combined_image = insertObjectAnnotation(combined_image,'circle',[c_pen r_pen repmat(25, [length(r_pen) 1])], repmat('', [length(r_pen) 1]), 'LineWidth', 5, 'Color', 'red', 'Font', 'arial');
    imwrite(combined_image, [outfile_visualization '_1.png']);
    
    combined_image = cells_image_colored + stomates_image_colored;
-   combined_image = insertObjectAnnotation(combined_image,'circle',[c_pen r_pen repmat(25, [length(r_pen) 1])], repmat('', [length(r_pen) 1]), 'LineWidth', 5, 'Color', 'red');
+   combined_image = insertObjectAnnotation(combined_image,'circle',[c_pen r_pen repmat(25, [length(r_pen) 1])], repmat('', [length(r_pen) 1]), 'LineWidth', 5, 'Color', 'red', 'Font', 'arial');
    imwrite(combined_image, [outfile_visualization '_2.png']);
    
    combined_image =  fungus_image_colored + cells_image_colored + stomates_image_colored + surface_image_colored ;
-   combined_image = insertObjectAnnotation(combined_image,'circle',[c_pen r_pen repmat(25, [length(r_pen) 1])], repmat('', [length(r_pen) 1]), 'LineWidth', 5, 'Color', 'red');
+   combined_image = insertObjectAnnotation(combined_image,'circle',[c_pen r_pen repmat(25, [length(r_pen) 1])], repmat('', [length(r_pen) 1]), 'LineWidth', 5, 'Color', 'red', 'Font', 'arial');
    imwrite(combined_image, [outfile_visualization '_3.png']);
    
    combined_image = fungus_image_colored + cells_image_colored2 + stomates_image_colored ;
-   combined_image = insertObjectAnnotation(combined_image,'circle',[c_pen r_pen repmat(25, [length(r_pen) 1])], repmat('', [length(r_pen) 1]), 'LineWidth', 5, 'Color', 'red');
+   combined_image = insertObjectAnnotation(combined_image,'circle',[c_pen r_pen repmat(25, [length(r_pen) 1])], repmat('', [length(r_pen) 1]), 'LineWidth', 5, 'Color', 'red', 'Font', 'arial');
    imwrite(combined_image, [outfile_visualization '_4.png']);
 end
 
