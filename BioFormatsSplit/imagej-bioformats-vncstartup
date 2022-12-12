@@ -1,0 +1,25 @@
+#!/bin/bash
+
+unset SESSION_MANAGER
+unset DBUS_SESSION_BUS_ADDRESS
+
+if [ -z "$IMAGEJ_MACRO_FILE" ]; then
+    echo "ERROR:  no IMAGEJ_MACRO_FILE provided" 1>&2
+    exit 1
+fi
+if [ ! -f "$IMAGEJ_MACRO_FILE" ]; then
+    echo "ERROR:  IMAGEJ_MACRO_FILE=$IMAGEJ_MACRO_FILE: file does not exist" 1>&2
+    exit 2
+fi
+
+IMAGEJ_ARGV=("$IMAGEJ_MACRO_FILE")
+if [ -n "$IMAGEJ_MACRO_DATADIR" ]; then
+    IMAGEJ_ARGV+=("$IMAGEJ_MACRO_DATADIR")
+fi
+
+if [ -z "$IMAGEJ_MACRO_LOGFILE" ]; then
+    exec ImageJ-linux64 -batch "${IMAGEJ_ARGV[@]}"
+else
+    exec ImageJ-linux64 -batch "${IMAGEJ_ARGV[@]}" > "$IMAGEJ_MACRO_LOGFILE" 2>&1
+fi
+

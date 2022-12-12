@@ -8,6 +8,7 @@ all:
 	$(MAKE) -C SkeletonConnection
 	$(MAKE) -C SurfaceEstimation
 	$(MAKE) -C ThresholdAndSkeletonize
+	$(MAKE) -C BioFormatsSplit
 
 clean:
 	$(MAKE) -C Segmentation clean
@@ -15,6 +16,7 @@ clean:
 	$(MAKE) -C SkeletonConnection clean
 	$(MAKE) -C SurfaceEstimation clean
 	$(MAKE) -C ThresholdAndSkeletonize clean
+	$(MAKE) -C BioFormatsSplit clean
 
 install: $(PREFIX)
 	$(MAKE) -C Segmentation install
@@ -22,5 +24,6 @@ install: $(PREFIX)
 	$(MAKE) -C SkeletonConnection install
 	$(MAKE) -C SurfaceEstimation install
 	$(MAKE) -C ThresholdAndSkeletonize install
+	$(MAKE) -C BioFormatsSplit install
 
 include Makefile.rules.post
