@@ -1,0 +1,105 @@
+#!/bin/bash
+#
+# Execute a ImageJ BioFormats macro in a VNC session -- BioFormats
+# requires a GUI to be available.
+#
+
+IMAGEJ_MACRO_FILE=""
+IMAGEJ_MACRO_DATADIR=""
+IMAGEJ_MACRO_LOGFILE=""
+
+VNCSTARTUP_FILE="$(which imagej-bioformats-vncstartup 2>/dev/null)"
+if [ $? -ne 0 ]; then
+    if [ -x "./imagej-bioformats-vncstartup" ]; then
+        VNCSTARTUP_FILE="./imagej-bioformats-vncstartup"
+    else
+        echo "ERROR:  unable to locate 'imagej-bioformats-vncstartup' script" 1>&2
+        exit 1
+    fi
+fi
+
+help() {
+    cat <<EOT
+usage:
+
+    $0 {options}
+
+  options:
+
+    -h/--help                     display program help screen
+    -m/--macro <file>             the IJM macro file to execute
+    -d/--data <directory>         path to the data directory for the macro
+                                  (e.g. where CZI images are located)
+    -l/--log <file>               write output from the IJM macro execution
+                                  to this file; overwrites any previous
+                                  content in the file, by default output
+                                  goes to the VNC session log file
+
+EOT
+    exit 0
+}
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+
+        -h|--help)
+            help
+            ;;
+
+        -m|--macro)
+            shift
+            if [ -z "$1" ]; then
+                echo "ERROR:  no filename provided with -m/--macro" 1>&2
+                exit 11
+            fi
+            IMAGEJ_MACRO_FILE="$1"
+            ;;
+        --macro=*)
+            IMAGEJ_MACRO_FILE="$(echo "$1" | sed 's/^--macro=//')"
+            ;;
+
+        -d|--data)
+            shift
+            if [ -z "$1" ]; then
+                echo "ERROR:  no filename provided with -d/--data" 1>&2
+                exit 11
+            fi
+            IMAGEJ_MACRO_DATADIR="$1"
+            ;;
+        --data=*)
+            IMAGEJ_MACRO_DATADIR="$(echo "$1" | sed 's/^--data=//')"
+            ;;
+
+        -l|--log)
+            shift
+            if [ -z "$1" ]; then
+                echo "ERROR:  no filename provided with -l/--log" 1>&2
+                exit 11
+            fi
+            IMAGEJ_MACRO_LOGFILE="$1"
+            ;;
+        --log=*)
+            IMAGEJ_MACRO_LOGFILE="$(echo "$1" | sed 's/^--log=//')"
+            ;;
+
+        *)
+            echo "ERROR:  unknown command line flag: $1" 1>&2
+            exit 11
+            ;;
+
+    esac
+    shift
+done
+
+# Vet all of the arguments:
+if [ -z "$IMAGEJ_MACRO_FILE" ]; then
+    echo "ERROR:  no macro file provided" 1>&2
+    exit 11
+fi
+
+# Export our control variables so the VNC startup script will see them:
+export IMAGEJ_MACRO_FILE IMAGEJ_MACRO_DATADIR IMAGEJ_MACRO_LOGFILE
+
+# Launch the VNC-wrapped run:
+exec vncserver -fg -autokill -xstartup "$VNCSTARTUP_FILE"
+
