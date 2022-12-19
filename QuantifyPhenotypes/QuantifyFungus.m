@@ -72,9 +72,6 @@ for ii = 1:length(CC.PixelIdxList)
         skeleton_tmp(voxels) = 1;
         skeleton_tmp = skeleton_tmp(min(r):max(r), min(c):max(c), min(z):max(z));
         [avg_branch_length,num_branches,max_branch_length,  num_triples, num_quads, num_terminal] = analyzeSkeleton(skeleton_tmp, scale);
-        if(isempty(max_branch_length))
-            max_branch_length = 0;
-        end
         avg_branch_lengths = [avg_branch_lengths; avg_branch_length ];
         num_brancheses = [num_brancheses; num_branches];
         max_branch_lengths = [max_branch_lengths; max_branch_length];
