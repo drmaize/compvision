@@ -22,7 +22,7 @@ INCLUDES		= -I Skel2Graph3D
 # want to submit such jobs with the "exclusive=1" flag to
 # ensure your program has the whole node to itself!
 #
-MCR_RUNTIME_FLAGS	= "-nojvm,-nodesktop,-singleCompThread"
+MCR_RUNTIME_FLAGS	= "-nodesktop,-singleCompThread"
 
 ##
 ####
